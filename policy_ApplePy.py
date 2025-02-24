@@ -2,7 +2,7 @@
 import subprocess
 import argparse
 import base64, json, os
-from auth.py import auth_token
+from auth import auth_token
 
 def delete_policy(token, args):
     #delete_policy_by_id.sh $Server $token $policy_id
