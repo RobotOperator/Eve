@@ -19,44 +19,37 @@ def get_computers(base_url, bearer_token, search_string):
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     response = requests.get(url, headers=headers, verify=False)
     response.raise_for_status()
-    return response.text
+    return json.loads(response.text)
 
+#Used to get more details about a computer using a supplied udid
+def get_computer_by_udid(base_url, bearer_token, udid):
+    url = f"{base_url}/JSSResource/computers/udid/{udid}"
+    headers = {
+        "Authorization": f"Bearer {bearer_token}",
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+    }
 
-#Search function for the JAMF API
-def search_computer_id(server, btoken, search_s):
-    result = get_computers(server, btoken, search_s)
-    return result
-    #command = ["./computer_search.sh", server, btoken, search_s]
-    #result = subprocess.run(command, capture_output=True, text=True, check=True)
-    #return result.stdout
+    # Disable SSL verification and execute request
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    response = requests.get(url, headers=headers, verify=False)
+    response.raise_for_status()
+    return json.loads(response.text)
 
-#def auth_token(server, args):
-#    if args.username and args.password:
-#        auth_string = args.username + ':' + args.password
-#        auth_token =  base64.b64encode(auth_string.encode()).decode()
-#        command = ["./get_token.sh", server, auth_token]
-#        result = subprocess.run(command, capture_output=True, text=True, check=True)
-#        return result.stdout
-#    elif args.basic_auth:
-#        command = ["./get_token.sh", server, auth_token]
-#        result = subprocess.run(command, capture_output=True, text=True, check=True)
-#        #print(result)
-#        return result.stdout
-#    elif os.path.exists('./.data/token'):
-#        with open('./.data/token') as f:
-#            json_string = f.read()
-#        data = json.loads(json_string)
-#        exp_string = data.get('expires')
-#        exp_date = datetime.strptime(exp_string, "%Y-%m-%dT%H:%M:%S:%fZ")
-#        now = datetime.utcnow()
-#        if exp_date > now:
-#            return json_string
-#        else:
-#           print("X - Cached token expired. Enter credentials to obtain a new token. -X")
-#           raise Exception("X - Missing args - X")
-#    else:
-#        print("X - Either a bearer token, basic auth string, or username and password must be supplied. -X")
-#        raise Exception("X - Missing args - X")
+#Used to get more details about a computer using a supplied udid
+def get_computer_by_id(base_url, bearer_token, id):
+    url = f"{base_url}/JSSResource/computers/id/{id}"
+    headers = {
+        "Authorization": f"Bearer {bearer_token}",
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+    }
+
+    # Disable SSL verification and execute request
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    response = requests.get(url, headers=headers, verify=False)
+    response.raise_for_status()
+    return json.loads(response.text)
 
 def main():
     #Create arg parser
@@ -67,8 +60,10 @@ def main():
     parser.add_argument('--basic_auth', type=str, help="The base64 basic auth token for authentication.")
     parser.add_argument('--bearer_token', type=str, help="A bearer token to use for authentication.")
     parser.add_argument('--jamf_server', required=True, type=str, help="The URL of the target JAMF server.")
-    parser.add_argument('--search_string', required=True, type=str, help="The computer ID string to search on.")
+    parser.add_argument('--search_string', type=str, help="Uses a supplied string to find macs that have attributes such as name which match the value. Use '*' to find all computers.")
     parser.add_argument('--api_port', type=str, required=True, help="The port of the JAMF server API to communicate with.")
+    parser.add_argument('--details_by_udid', type=str, help="Retrieves the full details of a macOS device specified by the device UDID.")
+    parser.add_argument('--details_by_id', type=str, help="Retrieves the full details of a macOS device specified by the device ID.")
 
     args = parser.parse_args()
 
@@ -87,7 +82,6 @@ def main():
         if 'token' not in bearer_string:
             print("X- Failed to retrieve token. Please check your credentials. -X")
             return 1
-        print(bearer_string)
 
         #JSON parsing the output
         with open('./.data/token', 'w') as out:
@@ -95,8 +89,15 @@ def main():
         data = json.loads(bearer_string)
         bearer_token = data.get('token')
 
-    #Perform our search
-    print(search_computer_id(jamf_sstring, bearer_token, args.search_string))
+    #Perform action based on supplied argument
+    if args.search_string:
+        print(json.dumps(get_computers(jamf_sstring, bearer_token, args.search_string), indent=2))
+    elif args.details_by_udid:
+        print(json.dumps(get_computer_by_udid(jamf_sstring, bearer_token, args.details_by_udid), indent=2))
+    elif args.details_by_id:
+        print(json.dumps(get_computer_by_id(jamf_sstring, bearer_token, args.details_by_id), indent=2))
+    else:
+        raise Exception("X - Missing args, Either search_string or a computer UDID must be supplied - X")
 
 if __name__ == "__main__":
     main()
