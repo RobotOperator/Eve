@@ -2,20 +2,32 @@
 import subprocess
 import argparse
 import base64, json, os
+import requests
 from datetime import datetime
+import requests
+import urllib3
+
+def get_auth_token(base_url, auth_header):
+    url = f"{base_url}/api/v1/auth/token"
+    headers = {
+        "Authorization": f"Basic {auth_header}"
+    }
+    
+    # Disable SSL verification and execute request
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    response = requests.post(url, headers=headers, verify=False)
+    response.raise_for_status()
+    return response.text
 
 def auth_token(server, args):
     if args.username and args.password:
         auth_string = args.username + ':' + args.password
         auth_token =  base64.b64encode(auth_string.encode()).decode()
-        command = ["./get_token.sh", server, auth_token]
-        result = subprocess.run(command, capture_output=True, text=True, check=True)
-        return result.stdout
+        result = get_auth_token(server, auth_token)
+        return result
     elif args.basic_auth:
-        command = ["./get_token.sh", server, auth_token]
-        result = subprocess.run(command, capture_output=True, text=True, check=True)
-        #print(result)
-        return result.stdout
+        result = get_auth_token(server, auth_token)
+        return result
     elif os.path.exists('./.data/token'):
         with open('./.data/token') as f:
             json_string = f.read()
