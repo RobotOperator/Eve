@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <account>
-	<username>my_test_updater</username>
+	<name>update_test</name>
 	<full_name/>
-	<real_name>WEEKLY</real_name>
+	<real_name>UPDATETEST</real_name>
 	<email/>
 	<email_address/>
 	<preferences>
@@ -17,7 +17,7 @@
 	<access_level>Full Access</access_level>
 	<privilege_set>Administrator</privilege_set>
 	<enabled>Enabled</enabled>
-	<password>MYdefaultpass123*</password>
+	<password>MYdefaultPASS123*</password>
 	<force_password_change>false</force_password_change>
 	<site>
             <id>-1</id>
