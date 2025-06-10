@@ -2,25 +2,13 @@
 import subprocess
 import argparse
 import base64, json, os
-import requests
-from datetime import datetime, UTC
-import requests
 import urllib3
+import requests
+from auth import auth_token
 
-def get_auth_token(base_url, auth_header):
-    url = f"{base_url}/api/v1/auth/token"
-    headers = {
-        "Authorization": f"Basic {auth_header}"
-    }
-    
-    # Disable SSL verification and execute request
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    response = requests.post(url, headers=headers, verify=False)
-    response.raise_for_status()
-    return response.text
-
-def get_token_details(server, bearer_token):
-    url = f"{server}/api/v1/auth"
+#web request
+def get_accounts(base_url, bearer_token):
+    url = f"{base_url}/JSSResource/accounts"
     headers = {
         "Authorization": f"Bearer {bearer_token}",
         "Content-Type": "application/json",
@@ -31,32 +19,37 @@ def get_token_details(server, bearer_token):
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     response = requests.get(url, headers=headers, verify=False)
     response.raise_for_status()
-    return json.dumps(json.loads(response.text), indent=2)
+    return json.loads(response.text)
 
-def auth_token(server, args):
-    if args.username and args.password:
-        auth_string = args.username + ':' + args.password
-        auth_token =  base64.b64encode(auth_string.encode()).decode()
-        result = get_auth_token(server, auth_token)
-        return result
-    elif args.basic_auth:
-        result = get_auth_token(server, auth_token)
-        return result
-    elif os.path.exists('./.data/token'):
-        with open('./.data/token') as f:
-            json_string = f.read()
-        data = json.loads(json_string)
-        exp_string = data.get('expires')
-        exp_date = datetime.strptime(exp_string, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=UTC)
-        now = datetime.now(UTC)
-        if exp_date > now:
-            return json_string
-        else:
-           raise Exception("X - Cached token expired. Enter credentials to obtain a new token. -X")
-           #raise Exception("X - Missing args - X")
-    else:
-        print("X - Either a bearer token, basic auth string, or username and password must be supplied. -X")
-        raise Exception("X - Missing args - X")
+#Used to get more details about a computer using a supplied udid
+def get_account_by_id(base_url, bearer_token, id):
+    url = f"{base_url}/JSSResource/accounts/userid/{id}"
+    headers = {
+        "Authorization": f"Bearer {bearer_token}",
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+    }
+
+    # Disable SSL verification and execute request
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    response = requests.get(url, headers=headers, verify=False)
+    response.raise_for_status()
+    return json.loads(response.text)
+
+#Used to get more details about a computer using a supplied udid
+#def get_computer_by_id(base_url, bearer_token, id):
+#    url = f"{base_url}/JSSResource/computers/id/{id}"
+#    headers = {
+#        "Authorization": f"Bearer {bearer_token}",
+#        "Content-Type": "application/json",
+#        "Accept": "application/json"
+#    }
+
+    # Disable SSL verification and execute request
+#    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+#    response = requests.get(url, headers=headers, verify=False)
+#    response.raise_for_status()
+#    return json.loads(response.text)
 
 def main():
     #Create arg parser
@@ -67,12 +60,13 @@ def main():
     parser.add_argument('--basic_auth', type=str, help="The base64 basic auth token for authentication.")
     parser.add_argument('--bearer_token', type=str, help="A bearer token to use for authentication.")
     parser.add_argument('--jamf_server', required=True, type=str, help="The URL of the target JAMF server.")
+    parser.add_argument('--get_accounts', action="store_true", help="Retrieves all JAMF accounts and groups from the server.")
     parser.add_argument('--api_port', type=str, required=True, help="The port of the JAMF server API to communicate with.")
-    parser.add_argument('--token_details', type=bool, help="Prints the scope and other info. for the current token using the auth current JAMF Pro API. (T/F)")
+#    parser.add_argument('--details_by_udid', type=str, help="Retrieves the full details of a macOS device specified by the device UDID.")
+    parser.add_argument('--get_account_by_id', type=str, help="Retrieves the full details of a JAMF account specified by the ID.")
 
     args = parser.parse_args()
-    
-    #Create data directory if not exists
+
     if not os.path.isdir('./.data'):
         os.makedirs('./.data')
         print("[i] - Directory .data created in current folder. -[i]")
@@ -87,18 +81,23 @@ def main():
         bearer_string = auth_token(jamf_sstring, args)
         if 'token' not in bearer_string:
             print("X- Failed to retrieve token. Please check your credentials. -X")
-            print(bearer_string)
             return 1
-        print(bearer_string)
 
         #JSON parsing the output
         with open('./.data/token', 'w') as out:
             out.write(bearer_string)
         data = json.loads(bearer_string)
         bearer_token = data.get('token')
-    if args.token_details:
-        print(get_token_details(jamf_sstring, bearer_token))
-    #To be continued...
+
+    #Perform action based on supplied argument
+    if args.get_accounts:
+        print(json.dumps(get_accounts(jamf_sstring, bearer_token), indent=2))
+#    elif args.details_by_udid:
+#        print(json.dumps(get_computer_by_udid(jamf_sstring, bearer_token, args.details_by_udid), indent=2))
+    elif args.get_account_by_id:
+        print(json.dumps(get_account_by_id(jamf_sstring, bearer_token, args.get_account_by_id), indent=2))
+    else:
+        raise Exception("X - Missing args - X")
 
 if __name__ == "__main__":
     main()
