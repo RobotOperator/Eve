@@ -67,8 +67,8 @@ def main():
     parser.add_argument('--basic_auth', type=str, help="The base64 basic auth token for authentication.")
     parser.add_argument('--bearer_token', type=str, help="A bearer token to use for authentication.")
     parser.add_argument('--jamf_server', required=True, type=str, help="The URL of the target JAMF server.")
-    parser.add_argument('--api_port', type=str, required=True, help="The port of the JAMF server API to communicate with.")
-    parser.add_argument('--token_details', type=bool, help="Prints the scope and other info. for the current token using the auth current JAMF Pro API. (T/F)")
+    parser.add_argument('--api_port', type=str, help="The port of the JAMF server API to communicate with.")
+    parser.add_argument('--token_details', action="store_true", help="Prints the scope and other info. for the current token using the auth current JAMF Pro API.")
 
     args = parser.parse_args()
     
@@ -78,7 +78,10 @@ def main():
         print("[i] - Directory .data created in current folder. -[i]")
 
     #Create jamf server string
-    jamf_sstring = args.jamf_server + ':' + args.api_port
+    if args.api_port:
+        jamf_sstring = args.jamf_server + ':' + args.api_port
+    else:
+        jamf_sstring = args.jamf_server
 
     #Get our web request bearer token
     if args.bearer_token:
