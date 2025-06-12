@@ -61,7 +61,7 @@ def main():
     parser.add_argument('--bearer_token', type=str, help="A bearer token to use for authentication.")
     parser.add_argument('--jamf_server', required=True, type=str, help="The URL of the target JAMF server.")
     parser.add_argument('--search_string', type=str, help="Uses a supplied string to find macs that have attributes such as name which match the value. Use '*' to find all computers.")
-    parser.add_argument('--api_port', type=str, required=True, help="The port of the JAMF server API to communicate with.")
+    parser.add_argument('--api_port', type=str, help="The port of the JAMF server API to communicate with.")
     parser.add_argument('--details_by_udid', type=str, help="Retrieves the full details of a macOS device specified by the device UDID.")
     parser.add_argument('--details_by_id', type=str, help="Retrieves the full details of a macOS device specified by the device ID.")
 
@@ -72,7 +72,10 @@ def main():
         print("[i] - Directory .data created in current folder. -[i]")
 
     #Create jamf server string
-    jamf_sstring = args.jamf_server + ':' + args.api_port
+    if args.api_port:
+        jamf_sstring = args.jamf_server + ':' + args.api_port
+    else:  
+        jamf_sstring = args.jamf_server
 
     #Get our web request bearer token
     if args.bearer_token:

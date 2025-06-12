@@ -39,7 +39,7 @@ def get_account_by_id(base_url, bearer_token, id):
 #Used to get more details about a computer using a supplied udid
 def create_account(base_url, bearer_token):
 
-    if not os.path.exists("create_account.xml") or not os.path.isfile("create_account.xml"):
+    if not os.path.exists("account_create.xml") or not os.path.isfile("account_create.xml"):
         raise Exception("X - create_account.xml not found in directory. - X")
 
     url = f"{base_url}/JSSResource/accounts/userid/0"
@@ -59,7 +59,7 @@ def create_account(base_url, bearer_token):
     return response.text
 
 def update_account_by_id(base_url, bearer_token, id):
-    if not os.path.exists("update_account.xml") or not os.path.isfile("update_account.xml"):
+    if not os.path.exists("account_update.xml") or not os.path.isfile("account_update.xml"):
         raise Exception("X - update_account.xml not found in directory. - X")
     
     url = f"{base_url}/JSSResource/accounts/userid/{id}"
@@ -88,7 +88,7 @@ def main():
     parser.add_argument('--bearer_token', type=str, help="A bearer token to use for authentication.")
     parser.add_argument('--jamf_server', required=True, type=str, help="The URL of the target JAMF server.")
     parser.add_argument('--get_accounts', action="store_true", help="Retrieves all JAMF accounts and groups from the server.")
-    parser.add_argument('--api_port', type=str, required=True, help="The port of the JAMF server API to communicate with.")
+    parser.add_argument('--api_port', type=str, help="The port of the JAMF server API to communicate with.")
     parser.add_argument('--create_account', action="store_true", help="Uses the contents of create_account.xml to create a new JAMF account.")
     parser.add_argument('--get_account_by_id', type=str, help="Retrieves the full details of a JAMF account specified by the ID.")
     parser.add_argument('--update_account_by_id', type=str, help="Uses the contents of update_account.xml to update the specified account id.")
@@ -100,7 +100,10 @@ def main():
         print("[i] - Directory .data created in current folder. -[i]")
 
     #Create jamf server string
-    jamf_sstring = args.jamf_server + ':' + args.api_port
+    if args.api_port:
+        jamf_sstring = args.jamf_server + ':' + args.api_port
+    else:  
+        jamf_sstring = args.jamf_server
 
     #Get our web request bearer token
     if args.bearer_token:
