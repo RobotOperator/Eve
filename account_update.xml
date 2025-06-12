@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<account>
+	<name>update_test</name>
+	<full_name/>
+	<real_name>UPDATETEST</real_name>
+	<email/>
+	<email_address/>
+	<preferences>
+		<language/>
+		<date_format>MM/dd/yyyy</date_format>
+		<region>Europe</region>
+                <timezone>Europe/London</timezone>
+		<disable_relative_dates>false</disable_relative_dates>
+	</preferences>
+        <multi_site_admin>true</multi_site_admin>
+	<directory_user>false</directory_user>
+	<access_level>Full Access</access_level>
+	<privilege_set>Administrator</privilege_set>
+	<enabled>Enabled</enabled>
+	<password>MYdefaultPASS123*</password>
+	<force_password_change>false</force_password_change>
+	<site>
+            <id>-1</id>
+            <name>None</name>
+        </site>
+        <privileges>
+            <jss_objects>
+                <privilege>Create Scripts</privilege>
+		<privilege>Read Scripts</privilege>
+                <privilege>Read Accounts</privilege>
+                <privilege>Read Computers</privilege>
+                <privilege>Create Accounts</privilege>
+                <privilege>Update Accounts</privilege>
+                <privilege>Delete Accounts</privilege>
+		<privilege>Delete Scripts</privilege>
+		<privilege>Create Policies</privilege>
+		<privilege>Read Policies</privilege>
+		<privilege>Delete Policies</privilege>
+		<privilege>Update Enrollment Customizations</privilege>
+		<privilege>Update Patch Management Software Titles</privilege>
+		<privilege>Update Advanced User Searches</privilege>
+		<privilege>Update iOS Configuration Profiles</privilege>
+		<privilege>Update Static Computer Groups</privilege>
+		<privilege>Update Jamf Protect Deployments</privilege>
+		<privilege>Update Remote Administration</privilege>
+		<privilege>Update Classes</privilege>
+		<privilege>Update Static Mobile Device Groups</privilege>
+		<privilege>Update Personal Device Profiles</privilege>
+		<privilege>Update Volume Purchasing Locations</privilege>
+		<privilege>Update Licensed Software</privilege>
+		<privilege>Update Jamf Connect Deployments</privilege>
+		<privilege>Update Computers</privilege>
+		<privilege>Update Device Enrollment Program Instances</privilege>
+		<privilege>Update Managed Software Updates</privilege>
+		<privilege>Update Smart Computer Groups</privilege>
+		<privilege>Update Mobile Device Enrollment Invitations</privilege>
+		<privilege>Update Enrollment Profiles</privilege>
+		<privilege>Update File Attachments</privilege>
+		<privilege>Update Mobile Device Applications</privilege>
+		<privilege>Read Advanced Computer Searches</privilege>
+		<privilege>Update Mobile Device PreStage Enrollments</privilege>
+		<privilege>Update VPP Invitations</privilege>
+		<privilege>Update Smart User Groups</privilege>
+		<privilege>Update Advanced Mobile Device Searches</privilege>
+		<privilege>Update Patch Policies</privilege>
+		<privilege>Update Restricted Software</privilege>
+		<privilege>Update Self Service Bookmarks</privilege>
+		<privilege>Update VPP Assignment</privilege>
+		<privilege>Update Computer Enrollment Invitations</privilege>
+		<privilege>Update Advanced User Content Searches</privilege>
+		<privilege>Update Static User Groups</privilege>
+		<privilege>Update macOS Configuration Profiles</privilege>
+		<privilege>Update eBooks</privilege>
+		<privilege>Update Personal Device Configurations</privilege>
+		<privilege>Update Mac Applications</privilege>
+		<privilege>Read Advanced User Searches</privilege>
+		<privilege>Update Mobile Devices</privilege>
+		<privilege>Update Smart Mobile Device Groups</privilege>
+		<privilege>Update User</privilege>
+		<privilege>Update Advanced Computer Searches</privilege>
+		<privilege>Update Network Integration</privilege>
+		<privilege>Update Policies</privilege>
+		<privilege>Update Mobile Device Managed App Configurations</privilege>
+		<privilege>Update Computer PreStage Enrollments</privilege>
+            </jss_objects>
+            <jss_actions>
+                <privilege>Flush Policy Logs</privilege>
+                <privilege>Run Policy</privilege>
+                <privilege>Change Password</privilege>
+            </jss_actions>
+        </privileges>
+</account>

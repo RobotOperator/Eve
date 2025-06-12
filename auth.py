@@ -39,7 +39,7 @@ def auth_token(server, args):
             return json_string
         else:
            print("\033[91m X - Cached token expired. Enter credentials to obtain a new token. -X \033[00m")
-           raise Exception("X - Missing args - X")
+           raise Exception("X - Cached token expired. Enter credentials to obtain a new token. -X")
     else:
         print("\033[91m X - Either a bearer token, basic auth string, or username and password must be supplied. -X \033[00m")
         raise Exception("X - Missing args - X")
