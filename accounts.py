@@ -40,7 +40,7 @@ def get_account_by_id(base_url, bearer_token, id):
 def create_account(base_url, bearer_token):
 
     if not os.path.exists("account_create.xml") or not os.path.isfile("account_create.xml"):
-        raise Exception("X - create_account.xml not found in directory. - X")
+        raise Exception("X - account_create.xml not found in directory. - X")
 
     url = f"{base_url}/JSSResource/accounts/userid/0"
     headers = {
@@ -49,7 +49,7 @@ def create_account(base_url, bearer_token):
         "Accept": "application/json"
     }
 
-    with open("create_account.xml", "rb") as file:
+    with open("account_create.xml", "rb") as file:
         data = file.read()
 
     # Disable SSL verification and execute request
@@ -60,7 +60,7 @@ def create_account(base_url, bearer_token):
 
 def update_account_by_id(base_url, bearer_token, id):
     if not os.path.exists("account_update.xml") or not os.path.isfile("account_update.xml"):
-        raise Exception("X - update_account.xml not found in directory. - X")
+        raise Exception("X - account_update.xml not found in directory. - X")
     
     url = f"{base_url}/JSSResource/accounts/userid/{id}"
     headers = {
@@ -69,7 +69,7 @@ def update_account_by_id(base_url, bearer_token, id):
         "Accept": "application/json"
     }
     
-    with open("update_account.xml", "rb") as file:
+    with open("account_update.xml", "rb") as file:
         data = file.read()
     
     # Disable SSL verification and execute request
