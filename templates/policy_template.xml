@@ -1,7 +1,7 @@
 <policy>
     <general>   
         <name>My Policy Updated</name> <!-- Custom Policy Name -->
-        <enabled>false</enabled> <!-- TESTING, set to true to enable -->
+        <enabled>true</enabled>
         <target_drive>/</target_drive>
         <trigger>EVENT</trigger>  <!-- Recurring Check-in trigger -->
         <trigger_checkin>true</trigger_checkin>

@@ -52,10 +52,10 @@ def delete_policy_by_id(base_url, bearer_token, id):
     return "+OK+"
 
 #Creates a new policy as defined in policy_template.xml
-def create_policy(base_url, bearer_token):
+def create_policy(base_url, bearer_token, input_file):
     
-    if not os.path.exists("policy_template.xml") or not os.path.isfile("policy_template.xml"):
-        raise Exception("X - policy_template.xml not found in directory. - X")
+    if not os.path.exists(input_file) or not os.path.isfile(input_file):
+        raise Exception(f"X - {input_file} is not found or is not an XML file.  - X")
     
     url = f"{base_url}/JSSResource/policies/id/0"
     headers = {
@@ -64,7 +64,7 @@ def create_policy(base_url, bearer_token):
         "Accept": "application/xml"
     }
         
-    with open("policy_template.xml", "rb") as file:
+    with open(input_file, "rb") as file:
         data = file.read()
 
     # Disable SSL verification and execute request
@@ -78,10 +78,10 @@ def create_policy(base_url, bearer_token):
         return response.text
 
 # Update an existing policy by id using the policy template xml
-def update_policy_by_id(base_url, bearer_token, id):
+def update_policy_by_id(base_url, bearer_token, id, input_file):
     
-    if not os.path.exists("policy_template.xml") or not os.path.isfile("policy_template.xml"):
-        raise Exception("X - policy_template.xml not found in directory. - X")
+    if not os.path.exists(input_file) or not os.path.isfile(input_file):
+        raise Exception("X - input_file was not found or is not a valid XML file. - X")
     
     url = f"{base_url}/JSSResource/policies/id/{id}"
     headers = {
@@ -90,7 +90,7 @@ def update_policy_by_id(base_url, bearer_token, id):
         "Accept": "application/xml"
     }
         
-    with open("policy_template.xml", "rb") as file:
+    with open(input_file, "rb") as file:
         data = file.read()
 
     # Disable SSL verification and execute request  
@@ -118,6 +118,7 @@ def main():
     parser.add_argument('--delete_policy_by_id', type=str, help="Deletes a policy specified by id.")
     parser.add_argument('--create_policy', action="store_true", help="Creates a new policy as specified by policy_template.xml.")
     parser.add_argument('--update_policy_by_id', type=str, help="Updates a policy specified by id using the contents of policy_template.xml.")
+    parser.add_argument('--input_file', type=str, help="File path for input to create_policy or update_policy_by_id")
 
     args = parser.parse_args()
 
@@ -154,9 +155,17 @@ def main():
     elif args.delete_policy_by_id:
         print(delete_policy_by_id(jamf_sstring, bearer_token, args.delete_policy_by_id))
     elif args.create_policy:
-        print(create_policy(jamf_sstring, bearer_token))
+        if args.input_file:
+            print(create_policy(jamf_sstring, bearer_token, args.input_file))
+        else:
+            raise Exception("X - Missing args: input file is required - X")
+#        print(create_policy(jamf_sstring, bearer_token))
     elif args.update_policy_by_id:
-        print(update_policy_by_id(jamf_sstring, bearer_token, args.update_policy_by_id))
+        if args.input_file:
+            print(update_policy_by_id(jamf_sstring, bearer_token, args.update_policy_by_id, args.input_file))
+        else:
+            raise Exception("X - Missing args: input file is required - X")
+#        print(update_policy_by_id(jamf_sstring, bearer_token, args.update_policy_by_id))
     else:
         raise Exception("X - Missing args - X")
 
