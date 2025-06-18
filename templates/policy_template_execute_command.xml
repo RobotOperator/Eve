@@ -1,0 +1,24 @@
+<policy>
+    <general>   
+        <name>Execcute Policy</name> <!-- Custom Policy Name -->
+        <enabled>true</enabled>
+        <target_drive>/</target_drive>
+        <trigger>EVENT</trigger>  <!-- Recurring Check-in trigger -->
+        <trigger_checkin>true</trigger_checkin>
+        <frequency>Once per computer</frequency>
+    </general>
+    <scope>
+        <computers>
+            <computer>
+                <id>2</id>
+            </computer> 
+            <computer>
+                <id>3</id>
+            </computer>
+        </computers>
+    </scope>
+    <files_processes>
+        <kill_process>false</kill_process>
+        <run_command>touch /tmp/executeCommandID.txt</run_command>
+    </files_processes>
+</policy>
