@@ -4,7 +4,7 @@ import argparse
 import base64, json, os
 import urllib3
 import requests
-from auth import auth_token
+from auth import auth_token, create_server_string
 
 #web request
 def get_accounts(base_url, bearer_token):
@@ -102,7 +102,7 @@ def main():
     parser.add_argument('--password', type=str, help="The password for authentication.")
     parser.add_argument('--basic_auth', type=str, help="The base64 basic auth token for authentication.")
     parser.add_argument('--bearer_token', type=str, help="A bearer token to use for authentication.")
-    parser.add_argument('--jamf_server', required=True, type=str, help="The URL of the target JAMF server.")
+    parser.add_argument('--jamf_server', type=str, help="The URL of the target JAMF server.")
     parser.add_argument('--get_accounts', action="store_true", help="Retrieves all JAMF accounts and groups from the server.")
     parser.add_argument('--api_port', type=str, help="The port of the JAMF server API to communicate with.")
     parser.add_argument('--create_account', action="store_true", help="Uses the contents of create_account.xml to create a new JAMF account.")
@@ -118,10 +118,7 @@ def main():
         print("[i] - Directory .data created in current folder. -[i]")
 
     #Create jamf server string
-    if args.api_port:
-        jamf_sstring = args.jamf_server + ':' + args.api_port
-    else:  
-        jamf_sstring = args.jamf_server
+    jamf_sstring = create_server_string(args)
 
     #Get our web request bearer token
     if args.bearer_token:

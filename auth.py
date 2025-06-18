@@ -24,9 +24,15 @@ def auth_token(server, args):
         auth_string = args.username + ':' + args.password
         auth_token =  base64.b64encode(auth_string.encode()).decode()
         result = get_auth_token(server, auth_token)
+        result_json = json.loads(result)
+        result_json["server"] = server
+        result = json.dumps(result_json)
         return result
     elif args.basic_auth:
         result = get_auth_token(server, auth_token)
+        result_json = json.loads(result)
+        result_json["server"] = server
+        result = json.dumps(result_json)
         return result 
     elif os.path.exists('./.data/token'):
         with open('./.data/token') as f:
@@ -44,6 +50,20 @@ def auth_token(server, args):
         print("\033[91m X - Either a bearer token, basic auth string, or username and password must be supplied. -X \033[00m")
         raise Exception("X - Missing args - X")
 
+#Create jamf server string
+def create_server_string(args):
+    if args.api_port and args.jamf_server:
+        jamf_sstring = args.jamf_server + ':' + args.api_port
+    elif args.jamf_server:
+        jamf_sstring = args.jamf_server
+    else:
+        if os.path.exists('./.data/token'):
+            with open('./.data/token', 'r') as f:
+                data = json.load(f)
+            jamf_sstring = data.get("server")
+        else:
+            raise Exception("X - JAMF Server must be specified -X")
+    return jamf_sstring
 
 #def auth_token(server, args):
 #    if args.username and args.password:
