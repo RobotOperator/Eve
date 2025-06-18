@@ -7,8 +7,8 @@ import requests
 from auth import auth_token
 
 #web request
-def get_accounts(base_url, bearer_token):
-    url = f"{base_url}/JSSResource/accounts"
+def get_policies(base_url, bearer_token):
+    url = f"{base_url}/JSSResource/policies"
     headers = {
         "Authorization": f"Bearer {bearer_token}",
         "Content-Type": "application/json",
@@ -21,9 +21,9 @@ def get_accounts(base_url, bearer_token):
     response.raise_for_status()
     return json.loads(response.text)
 
-#Used to get more details about a computer using a supplied udid
-def get_account_by_id(base_url, bearer_token, id):
-    url = f"{base_url}/JSSResource/accounts/userid/{id}"
+#Used to get details of a policy by specifying id
+def get_policy_by_id(base_url, bearer_token, id):
+    url = f"{base_url}/JSSResource/policies/id/{id}"
     headers = {
         "Authorization": f"Bearer {bearer_token}",
         "Content-Type": "application/json",
@@ -36,47 +36,72 @@ def get_account_by_id(base_url, bearer_token, id):
     response.raise_for_status()
     return json.loads(response.text)
 
-#Used to create a new account specified in create_account.xml
-def create_account(base_url, bearer_token):
+#Used to delete a policy specified by id
+def delete_policy_by_id(base_url, bearer_token, id):
+    url = f"{base_url}/JSSResource/policies/id/{id}"
+    headers = {
+        "Authorization": f"Bearer {bearer_token}",
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+    }
 
-    if not os.path.exists("account_create.xml") or not os.path.isfile("account_create.xml"):
-        raise Exception("X - account_create.xml not found in directory. - X")
+    # Disable SSL verification and execute request
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    response = requests.delete(url, headers=headers, verify=False)
+    response.raise_for_status()
+    return "+OK+"
 
-    url = f"{base_url}/JSSResource/accounts/userid/0"
+#Creates a new policy as defined in policy_template.xml
+def create_policy(base_url, bearer_token):
+    
+    if not os.path.exists("policy_template.xml") or not os.path.isfile("policy_template.xml"):
+        raise Exception("X - policy_template.xml not found in directory. - X")
+    
+    url = f"{base_url}/JSSResource/policies/id/0"
     headers = {
         "Authorization": f"Bearer {bearer_token}",
         "Content-Type": "application/xml",
-        "Accept": "application/json"
+        "Accept": "application/xml"
     }
-
-    with open("account_create.xml", "rb") as file:
+        
+    with open("policy_template.xml", "rb") as file:
         data = file.read()
 
     # Disable SSL verification and execute request
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     response = requests.post(url, headers=headers, data=data, verify=False)
-    response.raise_for_status()
-    return response.text
+    try:
+        response.raise_for_status()
+        return response.text
+    except Exception as e:
+        print(e)
+        return response.text
 
-def update_account_by_id(base_url, bearer_token, id):
-    if not os.path.exists("account_update.xml") or not os.path.isfile("account_update.xml"):
-        raise Exception("X - account_update.xml not found in directory. - X")
+# Update an existing policy by id using the policy template xml
+def update_policy_by_id(base_url, bearer_token, id):
     
-    url = f"{base_url}/JSSResource/accounts/userid/{id}"
+    if not os.path.exists("policy_template.xml") or not os.path.isfile("policy_template.xml"):
+        raise Exception("X - policy_template.xml not found in directory. - X")
+    
+    url = f"{base_url}/JSSResource/policies/id/{id}"
     headers = {
-        "Authorization": f"Bearer {bearer_token}",
+        "Authorization": f"Bearer {bearer_token}",  
         "Content-Type": "application/xml",
-        "Accept": "application/json"
+        "Accept": "application/xml"
     }
-    
-    with open("account_update.xml", "rb") as file:
+        
+    with open("policy_template.xml", "rb") as file:
         data = file.read()
-    
-    # Disable SSL verification and execute request
+
+    # Disable SSL verification and execute request  
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     response = requests.put(url, headers=headers, data=data, verify=False)
-    response.raise_for_status()
-    return response.text
+    try:
+        response.raise_for_status()
+        return response.text
+    except Exception as e:
+        print(e)
+        return response.text
 
 def main():
     #Create arg parser
@@ -87,11 +112,12 @@ def main():
     parser.add_argument('--basic_auth', type=str, help="The base64 basic auth token for authentication.")
     parser.add_argument('--bearer_token', type=str, help="A bearer token to use for authentication.")
     parser.add_argument('--jamf_server', required=True, type=str, help="The URL of the target JAMF server.")
-    parser.add_argument('--get_accounts', action="store_true", help="Retrieves all JAMF accounts and groups from the server.")
+    parser.add_argument('--get_policies', action="store_true", help="Gets all policy ids and names from the JAMF Pro server.")
     parser.add_argument('--api_port', type=str, help="The port of the JAMF server API to communicate with.")
-    parser.add_argument('--create_account', action="store_true", help="Uses the contents of create_account.xml to create a new JAMF account.")
-    parser.add_argument('--get_account_by_id', type=str, help="Retrieves the full details of a JAMF account specified by the ID.")
-    parser.add_argument('--update_account_by_id', type=str, help="Uses the contents of update_account.xml to update the specified account id.")
+    parser.add_argument('--get_policy_by_id', type=str, help="Retrieves the full details of a JAMF Pro policy specified by id.")
+    parser.add_argument('--delete_policy_by_id', type=str, help="Deletes a policy specified by id.")
+    parser.add_argument('--create_policy', action="store_true", help="Creates a new policy as specified by policy_template.xml.")
+    parser.add_argument('--update_policy_by_id', type=str, help="Updates a policy specified by id using the contents of policy_template.xml.")
 
     args = parser.parse_args()
 
@@ -121,14 +147,16 @@ def main():
         bearer_token = data.get('token')
 
     #Perform action based on supplied argument
-    if args.get_accounts:
-        print(json.dumps(get_accounts(jamf_sstring, bearer_token), indent=2))
-    elif args.create_account:
-        print(create_account(jamf_sstring, bearer_token))
-    elif args.update_account_by_id:
-        print(update_account_by_id(jamf_sstring, bearer_token, args.update_account_by_id))
-    elif args.get_account_by_id:
-        print(json.dumps(get_account_by_id(jamf_sstring, bearer_token, args.get_account_by_id), indent=2))
+    if args.get_policies:
+        print(json.dumps(get_policies(jamf_sstring, bearer_token), indent=2))
+    elif args.get_policy_by_id:
+        print(json.dumps(get_policy_by_id(jamf_sstring, bearer_token, args.get_policy_by_id), indent=2))
+    elif args.delete_policy_by_id:
+        print(delete_policy_by_id(jamf_sstring, bearer_token, args.delete_policy_by_id))
+    elif args.create_policy:
+        print(create_policy(jamf_sstring, bearer_token))
+    elif args.update_policy_by_id:
+        print(update_policy_by_id(jamf_sstring, bearer_token, args.update_policy_by_id))
     else:
         raise Exception("X - Missing args - X")
 
