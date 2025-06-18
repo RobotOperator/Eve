@@ -2,8 +2,7 @@
 import subprocess
 import argparse
 import base64, json, os
-from datetime import datetime
-from datetime import datetime
+from datetime import datetime, UTC
 import requests
 import urllib3
         
@@ -39,8 +38,8 @@ def auth_token(server, args):
             json_string = f.read()
         data = json.loads(json_string)
         exp_string = data.get('expires')
-        exp_date = datetime.strptime(exp_string, "%Y-%m-%dT%H:%M:%S.%fZ")
-        now = datetime.utcnow()
+        exp_date = datetime.strptime(exp_string, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=UTC)
+        now = datetime.now(UTC)
         if exp_date > now:
             return json_string
         else:
@@ -65,29 +64,62 @@ def create_server_string(args):
             raise Exception("X - JAMF Server must be specified -X")
     return jamf_sstring
 
-#def auth_token(server, args):
-#    if args.username and args.password:
-#        auth_string = args.username + ':' + args.password
-#        auth_token =  base64.b64encode(auth_string.encode()).decode()
-#        command = ["./get_token.sh", server, auth_token]
-#        result = subprocess.run(command, capture_output=True, text=True, check=True)
-#        return result.stdout
-#    elif args.basic_auth:
-#        command = ["./get_token.sh", server, auth_token]
-#        result = subprocess.run(command, capture_output=True, text=True, check=True)
-#        return result.stdout
-#    elif os.file.exists('./.data/token'):
-#        with open('./.data/token') as f:
-#            json_string = f.read()
-#        data = json.loads(json_string)
-#        exp_string = date.get('expires')
-#        exp_date = datetime.strptime(exp_string, "%Y-%m-%dT%H:%M:%S:%fZ")
-#        now = datetime.utcnow()
-#        if exp_date > now:
-#            return json_string
-#        else:
-#           print("X - Cached token expired. Enter credentials to obtain a new token. -X")
-#           raise Exception("X - Missing args - X")
-#    else:
-#        print("X - Either a bearer token, basic auth string, or username and password must be supplied. -X")
-#        raise Exception("X - Missing args - X")
+# Gets details of the current authenticated token
+def get_token_details(server, bearer_token):
+    url = f"{server}/api/v1/auth"
+    headers = {
+        "Authorization": f"Bearer {bearer_token}",
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+    }
+
+    # Disable SSL verification and execute request
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    response = requests.get(url, headers=headers, verify=False)
+    response.raise_for_status()
+    return json.dumps(json.loads(response.text), indent=2)
+
+
+def main():
+    #Create arg parser
+    parser = argparse.ArgumentParser(description="Accepts authentication values for JAMF")
+    
+    parser.add_argument('--username', type=str, help="The username for authentication.")
+    parser.add_argument('--password', type=str, help="The password for authentication.")
+    parser.add_argument('--basic_auth', type=str, help="The base64 basic auth token for authentication.")
+    parser.add_argument('--bearer_token', type=str, help="A bearer token to use for authentication.")
+    parser.add_argument('--jamf_server', type=str, help="The URL of the target JAMF server.")
+    parser.add_argument('--api_port', type=str, help="The port of the JAMF server API to communicate with.")
+    parser.add_argument('--token_details', action="store_true", help="Prints the scope and other info. for the current token using the auth current JAMF Pro API.")
+
+    args = parser.parse_args()
+        
+    #Create data directory if not exists
+    if not os.path.isdir('./.data'):  
+        os.makedirs('./.data')
+        print("[i] - Directory .data created in current folder. -[i]")
+        
+    #Create jamf server string
+    jamf_sstring = create_server_string(args)
+        
+    #Get our web request bearer token
+    if args.bearer_token:
+        bearer_token = args.bearer_token
+    else:
+        bearer_string = auth_token(jamf_sstring, args)
+        if 'token' not in bearer_string:
+            print("X- Failed to retrieve token. Please check your credentials. -X")
+            print(bearer_string)
+            return 1
+        print(bearer_string)
+    
+        #JSON parsing the output
+        with open('./.data/token', 'w') as out:
+            out.write(bearer_string)
+        data = json.loads(bearer_string)
+        bearer_token = data.get('token')
+    if args.token_details:
+        print(get_token_details(jamf_sstring, bearer_token))
+
+if __name__ == "__main__":
+    main()
