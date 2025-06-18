@@ -51,6 +51,22 @@ def get_computer_by_id(base_url, bearer_token, id):
     response.raise_for_status()
     return json.loads(response.text)
 
+#Used to get computer policy logs  using a supplied udid
+def get_policy_logs_by_udid(base_url, bearer_token, udid):
+    url = f"{base_url}/JSSResource/computerhistory/udid/{udid}/subset/policy_logs"
+    headers = {
+        "Authorization": f"Bearer {bearer_token}",
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+    }
+
+    # Disable SSL verification and execute request
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    response = requests.get(url, headers=headers, verify=False)
+    response.raise_for_status()
+    return json.loads(response.text)
+
+
 def main():
     #Create arg parser
     parser = argparse.ArgumentParser(description="Accepts authentication values for JAMF")
@@ -64,7 +80,7 @@ def main():
     parser.add_argument('--api_port', type=str, help="The port of the JAMF server API to communicate with.")
     parser.add_argument('--details_by_udid', type=str, help="Retrieves the full details of a macOS device specified by the device UDID.")
     parser.add_argument('--details_by_id', type=str, help="Retrieves the full details of a macOS device specified by the device ID.")
-
+    parser.add_argument('--get_policy_logs_by_udid', type=str, help="Retrieves the policy logs for a computer specified by UDID.")
     args = parser.parse_args()
 
     if not os.path.isdir('./.data'):
@@ -96,6 +112,8 @@ def main():
         print(json.dumps(get_computer_by_udid(jamf_sstring, bearer_token, args.details_by_udid), indent=2))
     elif args.details_by_id:
         print(json.dumps(get_computer_by_id(jamf_sstring, bearer_token, args.details_by_id), indent=2))
+    elif args.get_policy_logs_by_udid:
+        print(json.dumps(get_policy_logs_by_udid(jamf_sstring, bearer_token, args.get_policy_logs_by_udid), indent=2))
     else:
         raise Exception("X - Missing args, Either search_string or a computer UDID must be supplied - X")
 
