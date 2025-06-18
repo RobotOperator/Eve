@@ -8,7 +8,8 @@ from auth import auth_token, create_server_string
 
 #web request
 def get_computers(base_url, bearer_token, search_string):
-    url = f"{base_url}/JSSResource/computers/match/{search_string}"
+    updated_string = '*' + search_string + '*'
+    url = f"{base_url}/JSSResource/computers/match/{updated_string}"
     headers = {
         "Authorization": f"Bearer {bearer_token}",
         "Content-Type": "application/json",
@@ -76,10 +77,10 @@ def main():
     parser.add_argument('--basic_auth', type=str, help="The base64 basic auth token for authentication.")
     parser.add_argument('--bearer_token', type=str, help="A bearer token to use for authentication.")
     parser.add_argument('--jamf_server', type=str, help="The URL of the target JAMF server.")
-    parser.add_argument('--search_string', type=str, help="Uses a supplied string to find macs that have attributes such as name which match the value. Use '*' to find all computers.")
+    parser.add_argument('--search_for_computer_by_string', type=str, help="Uses a supplied string to find macs that have attributes such as name or user which match the value.")
     parser.add_argument('--api_port', type=str, help="The port of the JAMF server API to communicate with.")
-    parser.add_argument('--details_by_udid', type=str, help="Retrieves the full details of a macOS device specified by the device UDID.")
-    parser.add_argument('--details_by_id', type=str, help="Retrieves the full details of a macOS device specified by the device ID.")
+    parser.add_argument('--get_computer_by_udid', type=str, help="Retrieves the full details of a macOS device specified by the device UDID.")
+    parser.add_argument('--get_computer_by_id', type=str, help="Retrieves the full details of a macOS device specified by the device ID.")
     parser.add_argument('--get_policy_logs_by_udid', type=str, help="Retrieves the policy logs for a computer specified by UDID.")
     args = parser.parse_args()
 
@@ -106,12 +107,12 @@ def main():
         bearer_token = data.get('token')
 
     #Perform action based on supplied argument
-    if args.search_string:
-        print(json.dumps(get_computers(jamf_sstring, bearer_token, args.search_string), indent=2))
-    elif args.details_by_udid:
-        print(json.dumps(get_computer_by_udid(jamf_sstring, bearer_token, args.details_by_udid), indent=2))
-    elif args.details_by_id:
-        print(json.dumps(get_computer_by_id(jamf_sstring, bearer_token, args.details_by_id), indent=2))
+    if args.search_for_computer_by_string:
+        print(json.dumps(get_computers(jamf_sstring, bearer_token, args.search_for_computer_by_string), indent=2))
+    elif args.get_computer_by_udid:
+        print(json.dumps(get_computer_by_udid(jamf_sstring, bearer_token, args.get_computer_by_udid), indent=2))
+    elif args.get_computer_by_id:
+        print(json.dumps(get_computer_by_id(jamf_sstring, bearer_token, args.get_computer_by_id), indent=2))
     elif args.get_policy_logs_by_udid:
         print(json.dumps(get_policy_logs_by_udid(jamf_sstring, bearer_token, args.get_policy_logs_by_udid), indent=2))
     else:
