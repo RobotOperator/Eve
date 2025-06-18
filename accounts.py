@@ -21,7 +21,7 @@ def get_accounts(base_url, bearer_token):
     response.raise_for_status()
     return json.loads(response.text)
 
-#Used to get more details about a computer using a supplied udid
+#Used to get more details about an account using a supplied id
 def get_account_by_id(base_url, bearer_token, id):
     url = f"{base_url}/JSSResource/accounts/userid/{id}"
     headers = {
@@ -35,6 +35,22 @@ def get_account_by_id(base_url, bearer_token, id):
     response = requests.get(url, headers=headers, verify=False)
     response.raise_for_status()
     return json.loads(response.text)
+
+#Deletes an account specified by id
+def delete_account_by_id(base_url, bearer_token, id):
+    url = f"{base_url}/JSSResource/accounts/userid/{id}"
+    headers = {
+        "Authorization": f"Bearer {bearer_token}",
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+    }
+
+    # Disable SSL verification and execute request
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    response = requests.delete(url, headers=headers, verify=False)
+    response.raise_for_status()
+    return "+OK+"
+
 
 #Used to create a new account specified by input_file
 def create_account(base_url, bearer_token, input_file):
@@ -91,6 +107,7 @@ def main():
     parser.add_argument('--api_port', type=str, help="The port of the JAMF server API to communicate with.")
     parser.add_argument('--create_account', action="store_true", help="Uses the contents of create_account.xml to create a new JAMF account.")
     parser.add_argument('--get_account_by_id', type=str, help="Retrieves the full details of a JAMF account specified by the ID.")
+    parser.add_argument('--delete_account_by_id', type=str, help="Deletes an account specified by the ID.")
     parser.add_argument('--update_account_by_id', type=str, help="Uses the contents of update_account.xml to update the specified account id.")
     parser.add_argument('--input_file', type=str, help="File path for input to create_account or update_account_by_id")
 
@@ -129,15 +146,15 @@ def main():
             print(create_account(jamf_sstring, bearer_token, args.input_file))
         else:
             raise Exception("X - Missing args: input file is required - X")
-#        print(create_account(jamf_sstring, bearer_token))
     elif args.update_account_by_id:
         if args.input_file:
             print(update_account_by_id(jamf_sstring, bearer_token, args.update_account_by_id, args.input_file))
         else:
             raise Exception("X - Missing args: input file is required - X")
-#        print(update_account_by_id(jamf_sstring, bearer_token, args.update_account_by_id))
     elif args.get_account_by_id:
         print(json.dumps(get_account_by_id(jamf_sstring, bearer_token, args.get_account_by_id), indent=2))
+    elif args.delete_account_by_id:
+        print(delete_account_by_id(jamf_sstring, bearer_token, args.delete_account_by_id))
     else:
         raise Exception("X - Missing args - X")
 
