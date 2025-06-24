@@ -148,6 +148,22 @@ def update_computer_extension_by_id(base_url, bearer_token, id, input_file):
         print(e)
         return response.text
 
+# Delete an existing computer extension attribute by id
+def delete_computer_extension_by_id(base_url, bearer_token, id):
+    
+    url = f"{base_url}/JSSResource/computerextensionattributes/id/{id}"
+    headers = {
+        "Authorization": f"Bearer {bearer_token}",
+        "Accept": "application/xml"
+    }   
+        
+    
+    # Disable SSL verification and execute request
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    response = requests.delete(url, headers=headers, verify=False)
+    response.raise_for_status()
+    return "+OK+"
+
 
 def main():
     #Create arg parser
@@ -168,6 +184,7 @@ def main():
     parser.add_argument('--create_computer_extension_attribute', action="store_true", help="Creates a new computer extension attribute based on supplied input XML file.")
     parser.add_argument('--input_file', type=str, help="File path for input to create_policy or update_policy_by_id")
     parser.add_argument('--update_computer_extension_attribute_by_id', type=str, help="Updates an existing computer extension attribute based on supplied input XML file.")
+    parser.add_argument('--delete_computer_extension_attribute_by_id', type=str, help="Deletes an existing computer extension attribute using the ID.")
     args = parser.parse_args()
 
     if not os.path.isdir('./.data'):
@@ -215,6 +232,8 @@ def main():
             print(update_computer_extension_by_id(jamf_sstring, bearer_token, args.update_computer_extension_attribute_by_id, args.input_file))
         else:
             raise Exception("X - Missing args: input file is required - X")
+    elif args.delete_computer_extension_attribute_by_id:
+        print(delete_computer_extension_by_id(jamf_sstring, bearer_token, args.delete_computer_extension_attribute_by_id))
     else:
         raise Exception("X - Missing args, Either search_string or a computer UDID must be supplied - X")
 
