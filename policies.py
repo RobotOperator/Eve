@@ -116,7 +116,7 @@ def main():
     parser.add_argument('--api_port', type=str, help="The port of the JAMF server API to communicate with.")
     parser.add_argument('--get_policy_by_id', type=str, help="Retrieves the full details of a JAMF Pro policy specified by id.")
     parser.add_argument('--delete_policy_by_id', type=str, help="Deletes a policy specified by id.")
-    parser.add_argument('--create_policy', action="store_true", help="Creates a new policy as specified by policy_template.xml.")
+    parser.add_argument('--create_policy', action="store_true", help="Creates a new policy as specified by input_file XML.")
     parser.add_argument('--update_policy_by_id', type=str, help="Updates a policy specified by id using the contents of policy_template.xml.")
     parser.add_argument('--input_file', type=str, help="File path for input to create_policy or update_policy_by_id")
 

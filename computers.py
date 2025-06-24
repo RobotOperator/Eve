@@ -67,6 +67,87 @@ def get_policy_logs_by_udid(base_url, bearer_token, udid):
     response.raise_for_status()
     return json.loads(response.text)
 
+#Used to enumerate computer extension attributes
+def get_computer_extension_attributes(base_url, bearer_token):
+    url = f"{base_url}/JSSResource/computerextensionattributes"
+    headers = {
+        "Authorization": f"Bearer {bearer_token}",
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+    }
+    
+    # Disable SSL verification and execute request
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    response = requests.get(url, headers=headers, verify=False)
+    response.raise_for_status()
+    return json.loads(response.text)
+
+#Used to enumerate computer extension attributes  
+def get_computer_extension_attribute_by_id(base_url, bearer_token, id):
+    url = f"{base_url}/JSSResource/computerextensionattributes/id/{id}"
+    headers = {
+        "Authorization": f"Bearer {bearer_token}",
+        "Accept": "application/json"
+    }
+    
+    # Disable SSL verification and execute request
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    response = requests.get(url, headers=headers, verify=False) 
+    response.raise_for_status()
+    return json.loads(response.text)
+
+#Creates a new computer extension attribute as defined in input_file
+def create_computer_extension_attribute(base_url, bearer_token, input_file):
+    
+    if not os.path.exists(input_file) or not os.path.isfile(input_file):
+        raise Exception(f"X - {input_file} is not found or is not an XML file.  - X")
+        
+    url = f"{base_url}/JSSResource/computerextensionattributes/id/0"
+    headers = {
+        "Authorization": f"Bearer {bearer_token}",
+        "Content-Type": "application/xml",
+        "Accept": "application/xml"
+    }
+    
+    with open(input_file, "rb") as file:
+        data = file.read()
+    
+    # Disable SSL verification and execute request
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    response = requests.post(url, headers=headers, data=data, verify=False)
+    try:
+        response.raise_for_status()
+        return response.text
+    except Exception as e:
+        print(e)
+        return response.text
+
+# Update an existing computer extension attribute by id using the input xml
+def update_computer_extension_by_id(base_url, bearer_token, id, input_file):
+
+    if not os.path.exists(input_file) or not os.path.isfile(input_file):
+        raise Exception("X - input_file was not found or is not a valid XML file. - X")
+    
+    url = f"{base_url}/JSSResource/computerextensionattributes/id/{id}"
+    headers = {
+        "Authorization": f"Bearer {bearer_token}",
+        "Content-Type": "application/xml",
+        "Accept": "application/xml"
+    }
+        
+    with open(input_file, "rb") as file:
+        data = file.read()
+    
+    # Disable SSL verification and execute request
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    response = requests.put(url, headers=headers, data=data, verify=False)
+    try:
+        response.raise_for_status()
+        return response.text
+    except Exception as e:
+        print(e)
+        return response.text
+
 
 def main():
     #Create arg parser
@@ -82,6 +163,11 @@ def main():
     parser.add_argument('--get_computer_by_udid', type=str, help="Retrieves the full details of a macOS device specified by the device UDID.")
     parser.add_argument('--get_computer_by_id', type=str, help="Retrieves the full details of a macOS device specified by the device ID.")
     parser.add_argument('--get_policy_logs_by_udid', type=str, help="Retrieves the policy logs for a computer specified by UDID.")
+    parser.add_argument('--get_computer_extension_attributes', action="store_true", help="Retrieves all computer extension attributes.")
+    parser.add_argument('--get_computer_extension_attribute_by_id', type=str, help="Retrieves an individual computer extension attributes details.")
+    parser.add_argument('--create_computer_extension_attribute', action="store_true", help="Creates a new computer extension attribute based on supplied input XML file.")
+    parser.add_argument('--input_file', type=str, help="File path for input to create_policy or update_policy_by_id")
+    parser.add_argument('--update_computer_extension_attribute_by_id', type=str, help="Updates an existing computer extension attribute based on supplied input XML file.")
     args = parser.parse_args()
 
     if not os.path.isdir('./.data'):
@@ -115,6 +201,20 @@ def main():
         print(json.dumps(get_computer_by_id(jamf_sstring, bearer_token, args.get_computer_by_id), indent=2))
     elif args.get_policy_logs_by_udid:
         print(json.dumps(get_policy_logs_by_udid(jamf_sstring, bearer_token, args.get_policy_logs_by_udid), indent=2))
+    elif args.get_computer_extension_attributes:
+        print(json.dumps(get_computer_extension_attributes(jamf_sstring, bearer_token), indent=2))
+    elif args.get_computer_extension_attribute_by_id:
+        print(json.dumps(get_computer_extension_attribute_by_id(jamf_sstring, bearer_token, args.get_computer_extension_attribute_by_id), indent=2))
+    elif args.create_computer_extension_attribute:  
+        if args.input_file:
+            print(create_computer_extension_attribute(jamf_sstring, bearer_token, args.input_file))
+        else:
+            raise Exception("X - Missing args: input file is required - X")
+    elif args.update_computer_extension_attribute_by_id:
+        if args.input_file:
+            print(update_computer_extension_by_id(jamf_sstring, bearer_token, args.update_computer_extension_attribute_by_id, args.input_file))
+        else:
+            raise Exception("X - Missing args: input file is required - X")
     else:
         raise Exception("X - Missing args, Either search_string or a computer UDID must be supplied - X")
 

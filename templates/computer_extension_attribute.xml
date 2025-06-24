@@ -1,0 +1,14 @@
+<computer_extension_attribute>
+    <name>Eve Test</name>
+    <description>Creates /tmp/test.txt on the client</description>
+    <data_type>String</data_type>
+    <input_type>
+        <type>script</type>
+        <platform>Mac</platform>
+        <script>#!/bin/bash
+touch /tmp/test.txt
+echo "&lt;result&gt;Created /tmp/test.txt&lt;/result&gt;"</script> <!-- Must escape <> characters -->
+    </input_type>
+    <inventory_display>General</inventory_display>
+    <enabled>true</enabled>
+</computer_extension_attribute>
