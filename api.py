@@ -7,9 +7,8 @@ import requests
 from auth import auth_token, create_server_string
 
 #web request
-def get_computers(base_url, bearer_token, search_string):
-    updated_string = '*' + search_string + '*'
-    url = f"{base_url}/JSSResource/computers/match/{updated_string}"
+def get_api_roles(base_url, bearer_token):
+    url = f"{base_url}/api/v1/api-roles"
     headers = {
         "Authorization": f"Bearer {bearer_token}",
         "Content-Type": "application/json",
@@ -22,9 +21,9 @@ def get_computers(base_url, bearer_token, search_string):
     response.raise_for_status()
     return json.loads(response.text)
 
-#Used to get more details about a computer using a supplied udid
-def get_computer_by_udid(base_url, bearer_token, udid):
-    url = f"{base_url}/JSSResource/computers/udid/{udid}"
+#Get all api clients in the JAMF tenant
+def get_api_clients(base_url, bearer_token):
+    url = f"{base_url}/api/v1/api-integrations"
     headers = {
         "Authorization": f"Bearer {bearer_token}",
         "Content-Type": "application/json",
@@ -37,9 +36,9 @@ def get_computer_by_udid(base_url, bearer_token, udid):
     response.raise_for_status()
     return json.loads(response.text)
 
-#Used to get more details about a computer using a supplied udid
-def get_computer_by_id(base_url, bearer_token, id):
-    url = f"{base_url}/JSSResource/computers/id/{id}"
+#Used to get more details about an api role using a supplied id
+def get_role_by_id(base_url, bearer_token, id):
+    url = f"{base_url}/api/v1/api-roles/{id}"
     headers = {
         "Authorization": f"Bearer {bearer_token}",
         "Content-Type": "application/json",
@@ -52,9 +51,9 @@ def get_computer_by_id(base_url, bearer_token, id):
     response.raise_for_status()
     return json.loads(response.text)
 
-#Used to get computer policy logs  using a supplied udid
-def get_policy_logs_by_udid(base_url, bearer_token, udid):
-    url = f"{base_url}/JSSResource/computerhistory/udid/{udid}/subset/policy_logs"
+#Used to get an api client using a supplied id
+def get_client_by_id(base_url, bearer_token, id):
+    url = f"{base_url}/api/v1/api-integrations/{id}"
     headers = {
         "Authorization": f"Bearer {bearer_token}",
         "Content-Type": "application/json",
@@ -96,25 +95,25 @@ def get_computer_extension_attribute_by_id(base_url, bearer_token, id):
     response.raise_for_status()
     return json.loads(response.text)
 
-#Creates a new computer extension attribute as defined in input_file
-def create_computer_extension_attribute(base_url, bearer_token, input_file):
+#Creates a new api role with privileges as defined in input_file
+def create_api_role(base_url, bearer_token, input_file):
     
     if not os.path.exists(input_file) or not os.path.isfile(input_file):
         raise Exception(f"X - {input_file} is not found or is not an XML file.  - X")
         
-    url = f"{base_url}/JSSResource/computerextensionattributes/id/0"
+    url = f"{base_url}/api/v1/api-roles"
     headers = {
         "Authorization": f"Bearer {bearer_token}",
-        "Content-Type": "application/xml",
-        "Accept": "application/xml"
+        "Content-Type": "application/json",
+        "Accept": "application/json"
     }
     
-    with open(input_file, "rb") as file:
-        data = file.read()
+    with open(input_file, "r") as file:
+        data = json.loads(file.read())
     
     # Disable SSL verification and execute request
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    response = requests.post(url, headers=headers, data=data, verify=False)
+    response = requests.post(url, headers=headers, json=data, verify=False)
     try:
         response.raise_for_status()
         return response.text
@@ -122,25 +121,25 @@ def create_computer_extension_attribute(base_url, bearer_token, input_file):
         print(e)
         return response.text
 
-# Update an existing computer extension attribute by id using the input xml
-def update_computer_extension_by_id(base_url, bearer_token, id, input_file):
+# Update an existing api role by id using the input json
+def update_api_role_by_id(base_url, bearer_token, id, input_file):
 
     if not os.path.exists(input_file) or not os.path.isfile(input_file):
-        raise Exception("X - input_file was not found or is not a valid XML file. - X")
+        raise Exception("X - input_file was not found or is not a valid JSON file. - X")
     
-    url = f"{base_url}/JSSResource/computerextensionattributes/id/{id}"
+    url = f"{base_url}/api/v1/api-roles/{id}"
     headers = {
         "Authorization": f"Bearer {bearer_token}",
-        "Content-Type": "application/xml",
-        "Accept": "application/xml"
+        "Content-Type": "application/json",
+        "Accept": "application/json"
     }
         
-    with open(input_file, "rb") as file:
-        data = file.read()
+    with open(input_file, "r") as file:
+        data = json.loads(file.read())
     
     # Disable SSL verification and execute request
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    response = requests.put(url, headers=headers, data=data, verify=False)
+    response = requests.put(url, headers=headers, json=data, verify=False)
     try:
         response.raise_for_status()
         return response.text
@@ -148,16 +147,15 @@ def update_computer_extension_by_id(base_url, bearer_token, id, input_file):
         print(e)
         return response.text
 
-# Delete an existing computer extension attribute by id
-def delete_computer_extension_by_id(base_url, bearer_token, id):
+# Delete an existing api role by id
+def delete_api_role_by_id(base_url, bearer_token, id):
     
-    url = f"{base_url}/JSSResource/computerextensionattributes/id/{id}"
+    url = f"{base_url}/api/v1/api-roles/{id}"
     headers = {
         "Authorization": f"Bearer {bearer_token}",
-        "Accept": "application/xml"
+        "Accept": "application/json"
     }   
         
-    
     # Disable SSL verification and execute request
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     response = requests.delete(url, headers=headers, verify=False)
@@ -174,17 +172,17 @@ def main():
     parser.add_argument('--basic_auth', type=str, help="The base64 basic auth token for authentication.")
     parser.add_argument('--bearer_token', type=str, help="A bearer token to use for authentication.")
     parser.add_argument('--jamf_server', type=str, help="The URL of the target JAMF server.")
-    parser.add_argument('--search_for_computer_by_string', type=str, help="Uses a supplied string to find macs that have attributes such as name or user which match the value.")
+    parser.add_argument('--get_api_roles', action="store_true", help="Retrieves all api roles in the JAMF tenant.")
     parser.add_argument('--api_port', type=str, help="The port of the JAMF server API to communicate with.")
-    parser.add_argument('--get_computer_by_udid', type=str, help="Retrieves the full details of a macOS device specified by the device UDID.")
-    parser.add_argument('--get_computer_by_id', type=str, help="Retrieves the full details of a macOS device specified by the device ID.")
-    parser.add_argument('--get_policy_logs_by_udid', type=str, help="Retrieves the policy logs for a computer specified by UDID.")
+    parser.add_argument('--get_api_clients', action="store_true", help="Retrieves API clients in the JAMF tenant.")
+    parser.add_argument('--get_role_by_id', type=str, help="Retrieves details of an API role specified by id.")
+    parser.add_argument('--get_client_by_id', type=str, help="Retrieves the details of a client specified by id.")
     parser.add_argument('--get_computer_extension_attributes', action="store_true", help="Retrieves all computer extension attributes.")
     parser.add_argument('--get_computer_extension_attribute_by_id', type=str, help="Retrieves an individual computer extension attributes details.")
-    parser.add_argument('--create_computer_extension_attribute', action="store_true", help="Creates a new computer extension attribute based on supplied input XML file.")
-    parser.add_argument('--input_file', type=str, help="File path for input to create_policy or update_policy_by_id")
-    parser.add_argument('--update_computer_extension_attribute_by_id', type=str, help="Updates an existing computer extension attribute based on supplied input XML file.")
-    parser.add_argument('--delete_computer_extension_attribute_by_id', type=str, help="Deletes an existing computer extension attribute using the ID.")
+    parser.add_argument('--create_api_role', action="store_true", help="Creates a new api role with assigned privileges based on supplied input JSON file.")
+    parser.add_argument('--input_file', type=str, help="File path for input.")
+    parser.add_argument('--update_api_role_by_id', type=str, help="Updates an existing api role based on supplied input JSON file.")
+    parser.add_argument('--delete_api_role_by_id', type=str, help="Deletes an existing api role  using the ID.")
     args = parser.parse_args()
 
     if not os.path.isdir('./.data'):
@@ -210,32 +208,32 @@ def main():
         bearer_token = data.get('token')
 
     #Perform action based on supplied argument
-    if args.search_for_computer_by_string:
-        print(json.dumps(get_computers(jamf_sstring, bearer_token, args.search_for_computer_by_string), indent=2))
-    elif args.get_computer_by_udid:
-        print(json.dumps(get_computer_by_udid(jamf_sstring, bearer_token, args.get_computer_by_udid), indent=2))
-    elif args.get_computer_by_id:
-        print(json.dumps(get_computer_by_id(jamf_sstring, bearer_token, args.get_computer_by_id), indent=2))
-    elif args.get_policy_logs_by_udid:
-        print(json.dumps(get_policy_logs_by_udid(jamf_sstring, bearer_token, args.get_policy_logs_by_udid), indent=2))
+    if args.get_api_roles:
+        print(json.dumps(get_api_roles(jamf_sstring, bearer_token), indent=2))
+    elif args.get_api_clients:
+        print(json.dumps(get_api_clients(jamf_sstring, bearer_token), indent=2))
+    elif args.get_role_by_id:
+        print(json.dumps(get_role_by_id(jamf_sstring, bearer_token, args.get_role_by_id), indent=2))
+    elif args.get_client_by_id:
+        print(json.dumps(get_client_by_id(jamf_sstring, bearer_token, args.get_client_by_id), indent=2))
     elif args.get_computer_extension_attributes:
         print(json.dumps(get_computer_extension_attributes(jamf_sstring, bearer_token), indent=2))
     elif args.get_computer_extension_attribute_by_id:
         print(json.dumps(get_computer_extension_attribute_by_id(jamf_sstring, bearer_token, args.get_computer_extension_attribute_by_id), indent=2))
-    elif args.create_computer_extension_attribute:  
+    elif args.create_api_role:  
         if args.input_file:
-            print(create_computer_extension_attribute(jamf_sstring, bearer_token, args.input_file))
+            print(create_api_role(jamf_sstring, bearer_token, args.input_file))
         else:
             raise Exception("X - Missing args: input file is required - X")
-    elif args.update_computer_extension_attribute_by_id:
+    elif args.update_api_role_by_id:
         if args.input_file:
-            print(update_computer_extension_by_id(jamf_sstring, bearer_token, args.update_computer_extension_attribute_by_id, args.input_file))
+            print(update_api_role_by_id(jamf_sstring, bearer_token, args.update_api_role_by_id, args.input_file))
         else:
             raise Exception("X - Missing args: input file is required - X")
-    elif args.delete_computer_extension_attribute_by_id:
-        print(delete_computer_extension_by_id(jamf_sstring, bearer_token, args.delete_computer_extension_attribute_by_id))
+    elif args.delete_api_role_by_id:
+        print(delete_api_role_by_id(jamf_sstring, bearer_token, args.delete_api_role_by_id))
     else:
-        raise Exception("X - Missing args, Either search_string or a computer UDID must be supplied - X")
+        raise Exception("X - Missing args. - X")
 
 if __name__ == "__main__":
     main()

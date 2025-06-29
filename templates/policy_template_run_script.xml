@@ -1,0 +1,26 @@
+<policy>
+    <general>   
+        <name>My Policy Updated</name> <!-- Custom Policy Name -->
+        <enabled>true</enabled>
+        <target_drive>/</target_drive>
+        <trigger>EVENT</trigger>  <!-- Recurring Check-in trigger -->
+        <trigger_checkin>true</trigger_checkin>
+        <frequency>Once per computer</frequency>
+    </general>
+    <scope>
+        <computers>
+            <computer>
+                <id>1</id>
+            </computer> 
+            <computer>
+                <id>2</id>
+            </computer>
+        </computers>
+    </scope>
+    <scripts>
+        <script>
+            <id>1</id>
+            <priority>After</priority>
+        </script>
+    </scripts>
+</policy>

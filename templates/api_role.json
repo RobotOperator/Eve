@@ -1,0 +1,8 @@
+{
+      "displayName": "Test_Update_Role",
+      "privileges": [
+        "Update Computer Extension Attributes",
+        "Read Computer Extension Attributes",
+        "Create Computer Extension Attributes"
+      ]
+}

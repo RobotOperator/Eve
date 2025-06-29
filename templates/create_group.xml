@@ -1,0 +1,32 @@
+<group>
+	<id>1</id>
+	<name>Group_API</name>
+	<access_level>Full Access</access_level>
+	<privilege_set>Administrator</privilege_set>
+	<site>
+		<id>-1</id>
+		<name>None</name>
+	</site>
+	<privileges>
+		<jss_objects>
+		</jss_objects>
+		<jss_settings>
+		</jss_settings>
+		<jss_actions>
+		</jss_actions>
+		<recon>
+		</recon>
+		<casper_admin>
+		</casper_admin>
+		<casper_remote>
+		</casper_remote>
+		<casper_imaging>
+		</casper_imaging>
+	</privileges>
+	<members>
+		<user>
+			<id>10</id>
+			<name>group_admin</name>
+		</user>
+	</members>
+</group>

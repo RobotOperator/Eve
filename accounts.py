@@ -4,7 +4,7 @@ import argparse
 import base64, json, os
 import urllib3
 import requests
-from auth import auth_token
+from auth import auth_token, create_server_string
 
 #web request
 def get_accounts(base_url, bearer_token):
@@ -19,9 +19,44 @@ def get_accounts(base_url, bearer_token):
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     response = requests.get(url, headers=headers, verify=False)
     response.raise_for_status()
+    outputs = json.loads(response.text)
+    return_val = outputs["accounts"]["users"]  
+    return return_val
+
+#Used to get groups for JAMF accounts
+def get_groups(base_url, bearer_token):
+    url = f"{base_url}/JSSResource/accounts"
+    headers = {
+        "Authorization": f"Bearer {bearer_token}",
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+    }
+
+    # Disable SSL verification and execute request
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    response = requests.get(url, headers=headers, verify=False)
+    response.raise_for_status()
+    outputs = json.loads(response.text)
+    return_val = outputs["accounts"]["groups"]
+    return return_val
+
+#Used to get groups for JAMF accounts by specifying id
+def get_group_by_id(base_url, bearer_token, group_id):
+    url = f"{base_url}/JSSResource/accounts/groupid/{group_id}"
+    headers = {
+        "Authorization": f"Bearer {bearer_token}",
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+    }
+
+    # Disable SSL verification and execute request
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    response = requests.get(url, headers=headers, verify=False)
+    response.raise_for_status()
     return json.loads(response.text)
 
-#Used to get more details about a computer using a supplied udid
+
+#Used to get more details about an account using a supplied id
 def get_account_by_id(base_url, bearer_token, id):
     url = f"{base_url}/JSSResource/accounts/userid/{id}"
     headers = {
@@ -36,11 +71,27 @@ def get_account_by_id(base_url, bearer_token, id):
     response.raise_for_status()
     return json.loads(response.text)
 
-#Used to create a new account specified in create_account.xml
-def create_account(base_url, bearer_token):
+#Deletes an account specified by id
+def delete_account_by_id(base_url, bearer_token, id):
+    url = f"{base_url}/JSSResource/accounts/userid/{id}"
+    headers = {
+        "Authorization": f"Bearer {bearer_token}",
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+    }
 
-    if not os.path.exists("account_create.xml") or not os.path.isfile("account_create.xml"):
-        raise Exception("X - account_create.xml not found in directory. - X")
+    # Disable SSL verification and execute request
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    response = requests.delete(url, headers=headers, verify=False)
+    response.raise_for_status()
+    return "+OK+"
+
+
+#Used to create a new account specified by input_file
+def create_account(base_url, bearer_token, input_file):
+
+    if not os.path.exists(input_file) or not os.path.isfile(input_file):
+        raise Exception(f"X - {input_file} was not found or is not a valid file. - X")
 
     url = f"{base_url}/JSSResource/accounts/userid/0"
     headers = {
@@ -49,7 +100,7 @@ def create_account(base_url, bearer_token):
         "Accept": "application/json"
     }
 
-    with open("account_create.xml", "rb") as file:
+    with open(input_file, "rb") as file:
         data = file.read()
 
     # Disable SSL verification and execute request
@@ -58,9 +109,9 @@ def create_account(base_url, bearer_token):
     response.raise_for_status()
     return response.text
 
-def update_account_by_id(base_url, bearer_token, id):
-    if not os.path.exists("account_update.xml") or not os.path.isfile("account_update.xml"):
-        raise Exception("X - account_update.xml not found in directory. - X")
+def update_account_by_id(base_url, bearer_token, id, input_file):
+    if not os.path.exists(input_file) or not os.path.isfile(input_file):
+        raise Exception("X - {input_file} was not found or is not a valid file. - X")
     
     url = f"{base_url}/JSSResource/accounts/userid/{id}"
     headers = {
@@ -69,7 +120,7 @@ def update_account_by_id(base_url, bearer_token, id):
         "Accept": "application/json"
     }
     
-    with open("account_update.xml", "rb") as file:
+    with open(input_file, "rb") as file:
         data = file.read()
     
     # Disable SSL verification and execute request
@@ -77,6 +128,61 @@ def update_account_by_id(base_url, bearer_token, id):
     response = requests.put(url, headers=headers, data=data, verify=False)
     response.raise_for_status()
     return response.text
+
+def create_group(base_url, bearer_token, input_file):
+    if not os.path.exists(input_file) or not os.path.isfile(input_file):
+        raise Exception("X - {input_file} was not found or is not a valid file. - X")
+    
+    url = f"{base_url}/JSSResource/accounts/groupid/0"
+    headers = {
+        "Authorization": f"Bearer {bearer_token}",
+        "Content-Type": "application/xml",
+        "Accept": "application/json"
+    }
+        
+    with open(input_file, "rb") as file:  
+        data = file.read()
+     
+    # Disable SSL verification and execute request
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    response = requests.post(url, headers=headers, data=data, verify=False)
+    response.raise_for_status()
+    return response.text
+
+
+def update_group_by_id(base_url, bearer_token, id, input_file):
+    if not os.path.exists(input_file) or not os.path.isfile(input_file):
+        raise Exception("X - {input_file} was not found or is not a valid file. - X")
+    
+    url = f"{base_url}/JSSResource/accounts/groupid/{id}"
+    headers = {
+        "Authorization": f"Bearer {bearer_token}",   
+        "Content-Type": "application/xml",
+        "Accept": "application/json"
+    }
+        
+    with open(input_file, "rb") as file:
+        data = file.read()
+    
+    # Disable SSL verification and execute request
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    response = requests.put(url, headers=headers, data=data, verify=False)
+    response.raise_for_status()
+    return response.text
+
+def delete_group_by_id(base_url, bearer_token, id):
+    url = f"{base_url}/JSSResource/accounts/groupid/{id}"
+    headers = {
+        "Authorization": f"Bearer {bearer_token}",
+        "Accept": "application/json"
+    }
+
+    # Disable SSL verification and execute request
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    response = requests.delete(url, headers=headers, verify=False)
+    response.raise_for_status()
+    return "+OK+"
+
 
 def main():
     #Create arg parser
@@ -86,12 +192,19 @@ def main():
     parser.add_argument('--password', type=str, help="The password for authentication.")
     parser.add_argument('--basic_auth', type=str, help="The base64 basic auth token for authentication.")
     parser.add_argument('--bearer_token', type=str, help="A bearer token to use for authentication.")
-    parser.add_argument('--jamf_server', required=True, type=str, help="The URL of the target JAMF server.")
+    parser.add_argument('--jamf_server', type=str, help="The URL of the target JAMF server.")
     parser.add_argument('--get_accounts', action="store_true", help="Retrieves all JAMF accounts and groups from the server.")
     parser.add_argument('--api_port', type=str, help="The port of the JAMF server API to communicate with.")
     parser.add_argument('--create_account', action="store_true", help="Uses the contents of create_account.xml to create a new JAMF account.")
     parser.add_argument('--get_account_by_id', type=str, help="Retrieves the full details of a JAMF account specified by the ID.")
-    parser.add_argument('--update_account_by_id', type=str, help="Uses the contents of update_account.xml to update the specified account id.")
+    parser.add_argument('--delete_account_by_id', type=str, help="Deletes an account specified by the ID.")
+    parser.add_argument('--update_account_by_id', type=str, help="Uses the contents of the input_file to update the specified account id.")
+    parser.add_argument('--input_file', type=str, help="File path for input to create_account or update_account_by_id")
+    parser.add_argument('--get_group_by_id', type=str, help="Gets details of a JAMF Pro account group (not user group) as specified by id.")
+    parser.add_argument('--update_group_by_id', type=str, help="Uses the contents of the input_file to update a JAMF Pro account group specified by id.")
+    parser.add_argument('--create_group', action="store_true", help="Uses the contents of the input_file to create a new group.")
+    parser.add_argument('--get_groups', action="store_true", help="Retrieves all group names and IDs for the JAMF tenant.")
+    parser.add_argument('--delete_group_by_id', type=str, help="Deletes a group that is specified by ID.")
 
     args = parser.parse_args()
 
@@ -100,10 +213,7 @@ def main():
         print("[i] - Directory .data created in current folder. -[i]")
 
     #Create jamf server string
-    if args.api_port:
-        jamf_sstring = args.jamf_server + ':' + args.api_port
-    else:  
-        jamf_sstring = args.jamf_server
+    jamf_sstring = create_server_string(args)
 
     #Get our web request bearer token
     if args.bearer_token:
@@ -124,11 +234,35 @@ def main():
     if args.get_accounts:
         print(json.dumps(get_accounts(jamf_sstring, bearer_token), indent=2))
     elif args.create_account:
-        print(create_account(jamf_sstring, bearer_token))
+        if args.input_file:
+            print(create_account(jamf_sstring, bearer_token, args.input_file))
+        else:
+            raise Exception("X - Missing args: input file is required - X")
+    elif args.get_group_by_id:
+        print(json.dumps(get_group_by_id(jamf_sstring, bearer_token, args.get_group_by_id), indent=2))
     elif args.update_account_by_id:
-        print(update_account_by_id(jamf_sstring, bearer_token, args.update_account_by_id))
+        if args.input_file:
+            print(update_account_by_id(jamf_sstring, bearer_token, args.update_account_by_id, args.input_file))
+        else:
+            raise Exception("X - Missing args: input file is required - X")
     elif args.get_account_by_id:
         print(json.dumps(get_account_by_id(jamf_sstring, bearer_token, args.get_account_by_id), indent=2))
+    elif args.delete_account_by_id:
+        print(delete_account_by_id(jamf_sstring, bearer_token, args.delete_account_by_id))
+    elif args.update_group_by_id:
+        if args.input_file:
+            print(update_group_by_id(jamf_sstring, bearer_token, args.update_group_by_id, args.input_file))
+        else:
+            raise Exception("X - Missing args: input file is required - X")
+    elif args.create_group:
+        if args.input_file:
+            print(create_group(jamf_sstring, bearer_token, args.input_file))
+        else:
+            raise Exception("X - Missing args: input file is required - X")
+    elif args.get_groups:
+        print(json.dumps(get_groups(jamf_sstring, bearer_token), indent=2))
+    elif args.delete_group_by_id:
+        print(delete_group_by_id(jamf_sstring, bearer_token, args.delete_group_by_id))
     else:
         raise Exception("X - Missing args - X")
 

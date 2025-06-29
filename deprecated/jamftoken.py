@@ -6,6 +6,8 @@ import requests
 from datetime import datetime, UTC
 import requests
 import urllib3
+from auth import auth_token, create_server_string
+
 
 def get_auth_token(base_url, auth_header):
     url = f"{base_url}/api/v1/auth/token"
@@ -33,7 +35,7 @@ def get_token_details(server, bearer_token):
     response.raise_for_status()
     return json.dumps(json.loads(response.text), indent=2)
 
-def auth_token(server, args):
+'''def auth_token(server, args):
     if args.username and args.password:
         auth_string = args.username + ':' + args.password
         auth_token =  base64.b64encode(auth_string.encode()).decode()
@@ -56,7 +58,7 @@ def auth_token(server, args):
            #raise Exception("X - Missing args - X")
     else:
         print("X - Either a bearer token, basic auth string, or username and password must be supplied. -X")
-        raise Exception("X - Missing args - X")
+        raise Exception("X - Missing args - X")'''
 
 def main():
     #Create arg parser
@@ -66,7 +68,7 @@ def main():
     parser.add_argument('--password', type=str, help="The password for authentication.")
     parser.add_argument('--basic_auth', type=str, help="The base64 basic auth token for authentication.")
     parser.add_argument('--bearer_token', type=str, help="A bearer token to use for authentication.")
-    parser.add_argument('--jamf_server', required=True, type=str, help="The URL of the target JAMF server.")
+    parser.add_argument('--jamf_server', type=str, help="The URL of the target JAMF server.")
     parser.add_argument('--api_port', type=str, help="The port of the JAMF server API to communicate with.")
     parser.add_argument('--token_details', action="store_true", help="Prints the scope and other info. for the current token using the auth current JAMF Pro API.")
 
@@ -78,10 +80,7 @@ def main():
         print("[i] - Directory .data created in current folder. -[i]")
 
     #Create jamf server string
-    if args.api_port:
-        jamf_sstring = args.jamf_server + ':' + args.api_port
-    else:
-        jamf_sstring = args.jamf_server
+    jamf_sstring = create_server_string(args)
 
     #Get our web request bearer token
     if args.bearer_token:

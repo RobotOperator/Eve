@@ -1,0 +1,36 @@
+<group>
+	<id>1</id>
+	<name>Group_Extension</name>
+	<access_level>Full Access</access_level>
+	<privilege_set>Custom</privilege_set>
+	<site>
+		<id>-1</id>
+		<name>None</name>
+	</site>
+	<privileges>
+		<jss_objects>
+			<privilege>Create Computer Extension Attributes</privilege>
+                        <privilege>Read Computer Extension Attributes</privilege>
+                        <privilege>Update Computer Extension Attributes</privilege>
+                        <privilege>Delete Computer Extension Attributes</privilege>
+		</jss_objects>
+		<jss_settings>
+		</jss_settings>
+		<jss_actions>
+		</jss_actions>
+		<recon>
+		</recon>
+		<casper_admin>
+		</casper_admin>
+		<casper_remote>
+		</casper_remote>
+		<casper_imaging>
+		</casper_imaging>
+	</privileges>
+	<members>
+		<user>
+			<id>7</id>
+			<name>auditor</name>
+		</user>
+	</members>
+</group>
