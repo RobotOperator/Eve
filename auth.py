@@ -2,7 +2,7 @@
 import subprocess
 import argparse
 import base64, json, os
-from datetime import datetime, UTC
+from datetime import datetime, UTC, timedelta
 import requests
 import urllib3
         
@@ -17,6 +17,25 @@ def get_auth_token(base_url, auth_header):
     response = requests.post(url, headers=headers, verify=False)
     response.raise_for_status()
     return response.text  
+
+def api_auth_token(base_url, client_id, client_secret):
+    url = f"{base_url}/api/v1/oauth/token"
+    headers = {
+        "content-type": "application/x-www-form-urlencoded",
+        "accept": "application/json"
+    }
+
+    payload = {
+        "grant_type": "client_credentials",
+        "client_id": f"{client_id}",
+        "client_secret": f"{client_secret}"
+    }
+        
+    # Disable SSL verification and execute request
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    response = requests.post(url, data=payload, headers=headers, verify=False)
+    response.raise_for_status()
+    return response.text
             
 def auth_token(server, args):
     if args.username and args.password:
@@ -33,12 +52,23 @@ def auth_token(server, args):
         result_json["server"] = server
         result = json.dumps(result_json)
         return result 
+    elif hasattr(args, 'api_client_id') and hasattr(args, 'api_client_secret'):
+        result_json = {}
+        apistring = api_auth_token(server, args.api_client_id, args.api_client_secret)
+        jresponse = json.loads(apistring)
+        expiry = datetime.now(UTC) + timedelta(seconds=jresponse.get("expires_in"))
+        result_json["expires"] = expiry.strftime("%Y-%m-%dT%H:%M:%SZ")
+        result_json["token"] = jresponse.get("access_token")
+        result_json["server"] = server
+        print(f"Expires in {jresponse.get("expires_in")} seconds.")
+        result = json.dumps(result_json)
+        return result
     elif os.path.exists('./.data/token'):
         with open('./.data/token') as f:
             json_string = f.read()
         data = json.loads(json_string)
         exp_string = data.get('expires')
-        exp_date = datetime.strptime(exp_string, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=UTC)
+        exp_date = datetime.strptime(exp_string, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC)
         now = datetime.now(UTC)
         if exp_date > now:
             return json_string
@@ -88,6 +118,8 @@ def main():
     parser.add_argument('--password', type=str, help="The password for authentication.")
     parser.add_argument('--basic_auth', type=str, help="The base64 basic auth token for authentication.")
     parser.add_argument('--bearer_token', type=str, help="A bearer token to use for authentication.")
+    parser.add_argument('--api_client_id', type=str, help="The unique api client id.")
+    parser.add_argument('--api_client_secret', type=str, help="The unique api client secret.")
     parser.add_argument('--jamf_server', type=str, help="The URL of the target JAMF server.")
     parser.add_argument('--api_port', type=str, help="The port of the JAMF server API to communicate with.")
     parser.add_argument('--token_details', action="store_true", help="Prints the scope and other info. for the current token using the auth current JAMF Pro API.")
