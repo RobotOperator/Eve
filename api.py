@@ -66,35 +66,6 @@ def get_client_by_id(base_url, bearer_token, id):
     response.raise_for_status()
     return json.loads(response.text)
 
-#Used to enumerate computer extension attributes
-def get_computer_extension_attributes(base_url, bearer_token):
-    url = f"{base_url}/JSSResource/computerextensionattributes"
-    headers = {
-        "Authorization": f"Bearer {bearer_token}",
-        "Content-Type": "application/json",
-        "Accept": "application/json"
-    }
-    
-    # Disable SSL verification and execute request
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    response = requests.get(url, headers=headers, verify=False)
-    response.raise_for_status()
-    return json.loads(response.text)
-
-#Used to enumerate computer extension attributes  
-def get_computer_extension_attribute_by_id(base_url, bearer_token, id):
-    url = f"{base_url}/JSSResource/computerextensionattributes/id/{id}"
-    headers = {
-        "Authorization": f"Bearer {bearer_token}",
-        "Accept": "application/json"
-    }
-    
-    # Disable SSL verification and execute request
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    response = requests.get(url, headers=headers, verify=False) 
-    response.raise_for_status()
-    return json.loads(response.text)
-
 #Creates a new api role with privileges as defined in input_file
 def create_api_role(base_url, bearer_token, input_file):
     
@@ -111,6 +82,32 @@ def create_api_role(base_url, bearer_token, input_file):
     with open(input_file, "r") as file:
         data = json.loads(file.read())
     
+    # Disable SSL verification and execute request
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    response = requests.post(url, headers=headers, json=data, verify=False)
+    try:
+        response.raise_for_status()
+        return response.text
+    except Exception as e:
+        print(e)
+        return response.text
+
+#Creates a new api client with assigned roles as defined in input_file
+def create_api_client(base_url, bearer_token, input_file):
+    
+    if not os.path.exists(input_file) or not os.path.isfile(input_file):
+        raise Exception(f"X - {input_file} is not found or is not an XML file.  - X")
+        
+    url = f"{base_url}/api/v1/api-integrations"
+    headers = {
+        "Authorization": f"Bearer {bearer_token}",
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+    }
+    
+    with open(input_file, "r") as file:
+        data = json.loads(file.read())
+
     # Disable SSL verification and execute request
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     response = requests.post(url, headers=headers, json=data, verify=False)
@@ -147,6 +144,33 @@ def update_api_role_by_id(base_url, bearer_token, id, input_file):
         print(e)
         return response.text
 
+# Update an existing api client by id using the input json
+def update_api_client_by_id(base_url, bearer_token, id, input_file):
+
+    if not os.path.exists(input_file) or not os.path.isfile(input_file):
+        raise Exception("X - input_file was not found or is not a valid JSON file. - X")
+    
+    url = f"{base_url}/api/v1/api-integrations/{id}"
+    headers = {
+        "Authorization": f"Bearer {bearer_token}",
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+    }
+        
+    with open(input_file, "r") as file:
+        data = json.loads(file.read())
+    
+    # Disable SSL verification and execute request
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    response = requests.put(url, headers=headers, json=data, verify=False)
+    try:
+        response.raise_for_status()
+        return response.text
+    except Exception as e:
+        print(e)
+        return response.text
+
+
 # Delete an existing api role by id
 def delete_api_role_by_id(base_url, bearer_token, id):
     
@@ -162,6 +186,40 @@ def delete_api_role_by_id(base_url, bearer_token, id):
     response.raise_for_status()
     return "+OK+"
 
+# Delete an existing api client by id
+def delete_api_client_by_id(base_url, bearer_token, id):
+
+    url = f"{base_url}/api/v1/api-integrations/{id}"
+    headers = {
+        "Authorization": f"Bearer {bearer_token}",
+        "Accept": "application/json"
+    }
+    
+    # Disable SSL verification and execute request
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    response = requests.delete(url, headers=headers, verify=False)
+    response.raise_for_status()
+    return "+OK+"
+
+
+# Get an API Clients Credentials
+def get_client_credentials(base_url, bearer_token, client_id):
+    
+    url = f"{base_url}/api/v1/api-integrations/{client_id}/client-credentials"
+    headers = {
+        "Authorization": f"Bearer {bearer_token}",
+        "Accept": "application/json"   
+    }
+    
+    # Disable SSL verification and execute request
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    response = requests.post(url, headers=headers, verify=False)
+    try:
+        response.raise_for_status()
+        return json.loads(response.text)
+    except Exception as e:
+        print(e)
+        return response.text
 
 def main():
     #Create arg parser
@@ -182,7 +240,11 @@ def main():
     parser.add_argument('--create_api_role', action="store_true", help="Creates a new api role with assigned privileges based on supplied input JSON file.")
     parser.add_argument('--input_file', type=str, help="File path for input.")
     parser.add_argument('--update_api_role_by_id', type=str, help="Updates an existing api role based on supplied input JSON file.")
-    parser.add_argument('--delete_api_role_by_id', type=str, help="Deletes an existing api role  using the ID.")
+    parser.add_argument('--delete_api_role_by_id', type=str, help="Deletes an existing api role using the id.")
+    parser.add_argument('--create_api_client', action='store_true', help="Creates a new api client with assigned roles as specified in the input file.")
+    parser.add_argument('--get_client_credentials', type=str, help="Retrieves client credentials for the api client specified by id.")
+    parser.add_argument('--update_api_client_by_id', type=str, help="Updates and existing api client by using the supplied id and the input JSON file.")
+    parser.add_argument('--delete_api_client_by_id', type=str, help="Deletes an existing api client using the id.")
     args = parser.parse_args()
 
     if not os.path.isdir('./.data'):
@@ -225,13 +287,27 @@ def main():
             print(create_api_role(jamf_sstring, bearer_token, args.input_file))
         else:
             raise Exception("X - Missing args: input file is required - X")
+    elif args.create_api_client:
+        if args.input_file:
+            print(create_api_client(jamf_sstring, bearer_token, args.input_file))
+        else:
+            raise Exception("X - Missing args: input file is required - X")
     elif args.update_api_role_by_id:
         if args.input_file:
             print(update_api_role_by_id(jamf_sstring, bearer_token, args.update_api_role_by_id, args.input_file))
         else:
             raise Exception("X - Missing args: input file is required - X")
+    elif args.update_api_client_by_id:
+        if args.input_file:
+            print(update_api_client_by_id(jamf_sstring, bearer_token, args.update_api_client_by_id, args.input_file))
+        else:
+            raise Exception("X - Missing args: input file is required - X")
     elif args.delete_api_role_by_id:
         print(delete_api_role_by_id(jamf_sstring, bearer_token, args.delete_api_role_by_id))
+    elif args.get_client_credentials:
+        print(json.dumps(get_client_credentials(jamf_sstring, bearer_token, args.get_client_credentials), indent=2))
+    elif args.delete_api_client_by_id:
+        print(delete_api_client_by_id(jamf_sstring, bearer_token, args.delete_api_client_by_id))
     else:
         raise Exception("X - Missing args. - X")
 
