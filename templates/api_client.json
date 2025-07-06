@@ -1,0 +1,6 @@
+{
+      "displayName": "Eve_Client_Update",
+      "authorizationScopes": ["Test_API_Role"],
+      "enabled": true,
+      "accessTokenLifetimeSeconds": 1200
+}
