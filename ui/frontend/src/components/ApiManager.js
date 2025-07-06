@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import apiClient from '../utils/apiClient';
 
 const ApiManager = ({ sessionId, onBack }) => {
   const [apiRoles, setApiRoles] = useState([]);
@@ -6,41 +7,41 @@ const ApiManager = ({ sessionId, onBack }) => {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('roles');
   const [selectedRole, setSelectedRole] = useState(null);
+  const [error, setError] = useState('');
 
   useEffect(() => {
+    apiClient.setSession(sessionId);
     loadApiData();
-  }, []);
+  }, [sessionId]);
 
   const loadApiData = async () => {
     setLoading(true);
+    setError('');
     try {
       // Load API roles
-      const rolesResponse = await fetch('/api/api-roles', {
-        headers: {
-          'X-Session-ID': sessionId,
-          'Accept': 'application/json'
-        }
-      });
+      const rolesResponse = await apiClient.get('/api/api-roles');
       
       if (rolesResponse.ok) {
         const rolesData = await rolesResponse.json();
         setApiRoles(rolesData.results || []);
+      } else {
+        const errorData = await rolesResponse.json();
+        setError(errorData.error || 'Failed to load API roles');
       }
 
       // Load API clients
-      const clientsResponse = await fetch('/api/api-clients', {
-        headers: {
-          'X-Session-ID': sessionId,
-          'Accept': 'application/json'
-        }
-      });
+      const clientsResponse = await apiClient.get('/api/api-clients');
       
       if (clientsResponse.ok) {
         const clientsData = await clientsResponse.json();
         setApiClients(clientsData.results || []);
+      } else {
+        const errorData = await clientsResponse.json();
+        setError(errorData.error || 'Failed to load API clients');
       }
     } catch (error) {
       console.error('Error loading API data:', error);
+      setError('Network error while loading API data');
     } finally {
       setLoading(false);
     }
@@ -48,22 +49,21 @@ const ApiManager = ({ sessionId, onBack }) => {
 
   const getRoleDetails = async (id) => {
     setLoading(true);
+    setError('');
     try {
-      const response = await fetch(`/api/api-roles/${id}`, {
-        headers: {
-          'X-Session-ID': sessionId,
-          'Accept': 'application/json'
-        }
-      });
+      const response = await apiClient.get(`/api/api-roles/${id}`);
       
       if (response.ok) {
         const data = await response.json();
         setSelectedRole(data);
       } else {
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to get role details');
         console.error('Failed to get role details');
       }
     } catch (error) {
       console.error('Error getting role details:', error);
+      setError('Network error while getting role details');
     } finally {
       setLoading(false);
     }

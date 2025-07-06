@@ -78,8 +78,18 @@ const AuthForm = ({ onAuthSuccess }) => {
           timestamp: Date.now()
         };
         
-        // Don't save sensitive credentials, just the session info
+        // Store credentials temporarily for token refresh (more secure in sessionStorage)
+        const tempCredentials = {
+          url: formData.url,
+          authMethod: authMethod,
+          credentials: authMethod === 'oauth2' 
+            ? { client_id: formData.client_id, client_secret: formData.client_secret }
+            : { username: formData.username, password: formData.password }
+        };
+        
+        // Don't save sensitive credentials to localStorage, use sessionStorage instead
         localStorage.setItem('eve_auth_data', JSON.stringify(authData));
+        sessionStorage.setItem('eve_temp_credentials', JSON.stringify(tempCredentials));
         
         setTimeout(() => {
           onAuthSuccess(response.data.session_id);

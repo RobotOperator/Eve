@@ -78,3 +78,5 @@ python3 policy_Applepy.py --bearer_token 'eyxxxx' --jamf_server https://test.jam
 
 ## Contributors
 <a href="https://github.com/MayerDaniel">Daniel Mayer</a>
+
+

@@ -4,6 +4,8 @@ import requests
 import base64
 import os
 import sys
+import json
+from datetime import datetime, timedelta
 
 # Add the eve directory to the Python path so we can import the modules
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -21,6 +23,9 @@ CORS(app)
 
 # Store tokens temporarily (in production, use a proper session store)
 tokens = {}
+
+# Store authentication credentials for token refresh
+auth_credentials = {}
 
 @app.route('/')
 def serve():
@@ -102,6 +107,14 @@ def authenticate_oauth2(data, jamf_url):
             'expires_in': token_info.get('expires_in', 3600)
         }
         
+        # Store credentials for token refresh
+        auth_credentials[session_id] = {
+            'auth_method': 'oauth2',
+            'jamf_url': jamf_url,
+            'client_id': client_id,
+            'client_secret': client_secret
+        }
+        
         return jsonify({
             'success': True,
             'session_id': session_id,
@@ -147,6 +160,14 @@ def authenticate_username_password(data, jamf_url):
             'jamf_url': jamf_url,
             'auth_method': 'username_password',
             'expires_in': token_info.get('expires', 1800)  # Usually 30 minutes for username/password
+        }
+        
+        # Store credentials for token refresh
+        auth_credentials[session_id] = {
+            'auth_method': 'username_password',
+            'jamf_url': jamf_url,
+            'username': username,
+            'password': password
         }
         
         return jsonify({
@@ -206,156 +227,178 @@ def get_token_info(session_id):
 @app.route('/api/accounts', methods=['GET'])
 def get_accounts_endpoint():
     """Get all accounts"""
-    try:
-        session_id = request.headers.get('X-Session-ID')
-        token_info = get_token_info(session_id)
-        if not token_info:
-            return jsonify({'error': 'Invalid or expired session'}), 401
-        
-        result = accounts.get_accounts(token_info['jamf_url'], token_info['access_token'])
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({'error': f'Error getting accounts: {str(e)}'}), 500
+    session_id = request.headers.get('X-Session-ID')
+    if not session_id:
+        return jsonify({'error': 'Session ID required'}), 401
+    
+    result, status_code, error = make_jamf_request(session_id, 'GET', '/JSSResource/accounts')
+    
+    if error:
+        return jsonify({'error': error}), status_code
+    
+    # Extract users from the response
+    users = result.get('accounts', {}).get('users', [])
+    return jsonify(users), status_code
 
 @app.route('/api/groups', methods=['GET'])
 def get_groups_endpoint():
     """Get all groups"""
-    try:
-        session_id = request.headers.get('X-Session-ID')
-        token_info = get_token_info(session_id)
-        if not token_info:
-            return jsonify({'error': 'Invalid or expired session'}), 401
-        
-        result = accounts.get_groups(token_info['jamf_url'], token_info['access_token'])
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({'error': f'Error getting groups: {str(e)}'}), 500
+    session_id = request.headers.get('X-Session-ID')
+    if not session_id:
+        return jsonify({'error': 'Session ID required'}), 401
+    
+    result, status_code, error = make_jamf_request(session_id, 'GET', '/JSSResource/accounts')
+    
+    if error:
+        return jsonify({'error': error}), status_code
+    
+    # Extract groups from the response
+    groups = result.get('accounts', {}).get('groups', [])
+    return jsonify(groups), status_code
 
 @app.route('/api/groups/<int:group_id>', methods=['GET'])
 def get_group_by_id_endpoint(group_id):
     """Get group by ID"""
-    try:
-        session_id = request.headers.get('X-Session-ID')
-        token_info = get_token_info(session_id)
-        if not token_info:
-            return jsonify({'error': 'Invalid or expired session'}), 401
-        
-        result = accounts.get_group_by_id(token_info['jamf_url'], token_info['access_token'], group_id)
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({'error': f'Error getting group: {str(e)}'}), 500
+    session_id = request.headers.get('X-Session-ID')
+    if not session_id:
+        return jsonify({'error': 'Session ID required'}), 401
+    
+    result, status_code, error = make_jamf_request(session_id, 'GET', f'/JSSResource/accounts/groupid/{group_id}')
+    
+    if error:
+        return jsonify({'error': error}), status_code
+    
+    return jsonify(result), status_code
 
 # Computers API endpoints
 @app.route('/api/computers/search/<search_string>', methods=['GET'])
 def search_computers_endpoint(search_string):
     """Search computers"""
-    try:
-        session_id = request.headers.get('X-Session-ID')
-        token_info = get_token_info(session_id)
-        if not token_info:
-            return jsonify({'error': 'Invalid or expired session'}), 401
-        
-        result = computers.get_computers(token_info['jamf_url'], token_info['access_token'], search_string)
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({'error': f'Error searching computers: {str(e)}'}), 500
+    session_id = request.headers.get('X-Session-ID')
+    if not session_id:
+        return jsonify({'error': 'Session ID required'}), 401
+    
+    # Add wildcards around search string like the original implementation
+    updated_string = '*' + search_string + '*'
+    result, status_code, error = make_jamf_request(session_id, 'GET', f'/JSSResource/computers/match/{updated_string}')
+    
+    if error:
+        return jsonify({'error': error}), status_code
+    
+    return jsonify(result), status_code
 
 @app.route('/api/computers/udid/<udid>', methods=['GET'])
 def get_computer_by_udid_endpoint(udid):
     """Get computer by UDID"""
-    try:
-        session_id = request.headers.get('X-Session-ID')
-        token_info = get_token_info(session_id)
-        if not token_info:
-            return jsonify({'error': 'Invalid or expired session'}), 401
-        
-        result = computers.get_computer_by_udid(token_info['jamf_url'], token_info['access_token'], udid)
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({'error': f'Error getting computer: {str(e)}'}), 500
+    session_id = request.headers.get('X-Session-ID')
+    if not session_id:
+        return jsonify({'error': 'Session ID required'}), 401
+    
+    result, status_code, error = make_jamf_request(session_id, 'GET', f'/JSSResource/computers/udid/{udid}')
+    
+    if error:
+        return jsonify({'error': error}), status_code
+    
+    return jsonify(result), status_code
 
 @app.route('/api/computers/id/<int:computer_id>', methods=['GET'])
 def get_computer_by_id_endpoint(computer_id):
     """Get computer by ID"""
-    try:
-        session_id = request.headers.get('X-Session-ID')
-        token_info = get_token_info(session_id)
-        if not token_info:
-            return jsonify({'error': 'Invalid or expired session'}), 401
-        
-        result = computers.get_computer_by_id(token_info['jamf_url'], token_info['access_token'], computer_id)
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({'error': f'Error getting computer: {str(e)}'}), 500
+    session_id = request.headers.get('X-Session-ID')
+    if not session_id:
+        return jsonify({'error': 'Session ID required'}), 401
+    
+    result, status_code, error = make_jamf_request(session_id, 'GET', f'/JSSResource/computers/id/{computer_id}')
+    
+    if error:
+        return jsonify({'error': error}), status_code
+    
+    return jsonify(result), status_code
 
 # Policies API endpoints
 @app.route('/api/policies', methods=['GET'])
 def get_policies_endpoint():
     """Get all policies"""
-    try:
-        session_id = request.headers.get('X-Session-ID')
-        token_info = get_token_info(session_id)
-        if not token_info:
-            return jsonify({'error': 'Invalid or expired session'}), 401
-        
-        result = policies.get_policies(token_info['jamf_url'], token_info['access_token'])
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({'error': f'Error getting policies: {str(e)}'}), 500
+    session_id = request.headers.get('X-Session-ID')
+    if not session_id:
+        return jsonify({'error': 'Session ID required'}), 401
+    
+    result, status_code, error = make_jamf_request(session_id, 'GET', '/JSSResource/policies')
+    
+    if error:
+        return jsonify({'error': error}), status_code
+    
+    return jsonify(result), status_code
 
 @app.route('/api/policies/<int:policy_id>', methods=['GET'])
 def get_policy_by_id_endpoint(policy_id):
     """Get policy by ID"""
-    try:
-        session_id = request.headers.get('X-Session-ID')
-        token_info = get_token_info(session_id)
-        if not token_info:
-            return jsonify({'error': 'Invalid or expired session'}), 401
-        
-        result = policies.get_policy_by_id(token_info['jamf_url'], token_info['access_token'], policy_id)
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({'error': f'Error getting policy: {str(e)}'}), 500
+    session_id = request.headers.get('X-Session-ID')
+    if not session_id:
+        return jsonify({'error': 'Session ID required'}), 401
+    
+    result, status_code, error = make_jamf_request(session_id, 'GET', f'/JSSResource/policies/id/{policy_id}')
+    
+    if error:
+        return jsonify({'error': error}), status_code
+    
+    return jsonify(result), status_code
 
 @app.route('/api/policies/<int:policy_id>', methods=['DELETE'])
 def delete_policy_endpoint(policy_id):
     """Delete policy by ID"""
-    try:
-        session_id = request.headers.get('X-Session-ID')
-        token_info = get_token_info(session_id)
-        if not token_info:
-            return jsonify({'error': 'Invalid or expired session'}), 401
-        
-        result = policies.delete_policy_by_id(token_info['jamf_url'], token_info['access_token'], policy_id)
-        return jsonify({'success': True, 'message': 'Policy deleted successfully'})
-    except Exception as e:
-        return jsonify({'error': f'Error deleting policy: {str(e)}'}), 500
+    session_id = request.headers.get('X-Session-ID')
+    if not session_id:
+        return jsonify({'error': 'Session ID required'}), 401
+    
+    result, status_code, error = make_jamf_request(session_id, 'DELETE', f'/JSSResource/policies/id/{policy_id}')
+    
+    if error:
+        return jsonify({'error': error}), status_code
+    
+    return jsonify({'success': True, 'message': 'Policy deleted successfully'}), 200
 
 @app.route('/api/policies/<int:policy_id>/xml', methods=['GET'])
 def get_policy_xml_endpoint(policy_id):
     """Get policy XML by ID"""
+    session_id = request.headers.get('X-Session-ID')
+    if not session_id:
+        return jsonify({'error': 'Session ID required'}), 401
+    
+    # For XML requests, we need to use the direct approach with proper headers
+    if session_id not in tokens:
+        return jsonify({'error': 'Invalid session'}), 401
+    
+    token_info = tokens[session_id]
+    jamf_url = token_info['jamf_url']
+    access_token = token_info['access_token']
+    
+    url = f"{jamf_url}/JSSResource/policies/id/{policy_id}"
+    headers = {
+        'Authorization': f'Bearer {access_token}',
+        'Content-Type': 'application/xml',
+        'Accept': 'application/xml'
+    }
+    
     try:
-        session_id = request.headers.get('X-Session-ID')
-        token_info = get_token_info(session_id)
-        if not token_info:
-            return jsonify({'error': 'Invalid or expired session'}), 401
-        
-        # Make direct request to get XML format
-        import requests
         import urllib3
-        
-        url = f"{token_info['jamf_url']}/JSSResource/policies/id/{policy_id}"
-        headers = {
-            "Authorization": f"Bearer {token_info['access_token']}",
-            "Content-Type": "application/xml",
-            "Accept": "application/xml"
-        }
-        
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         response = requests.get(url, headers=headers, verify=False)
-        response.raise_for_status()
         
-        return jsonify({'xml': response.text})
+        # Handle 401 for XML requests
+        if response.status_code == 401:
+            new_token = refresh_token(session_id)
+            if new_token:
+                headers['Authorization'] = f'Bearer {new_token}'
+                response = requests.get(url, headers=headers, verify=False)
+            else:
+                return jsonify({'error': 'Token refresh failed. Please re-authenticate.'}), 401
+        
+        if response.status_code == 200:
+            return jsonify({'xml': response.text}), 200
+        else:
+            return jsonify({'error': f'Failed to get policy XML: {response.status_code}'}), response.status_code
+    
     except Exception as e:
         return jsonify({'error': f'Error getting policy XML: {str(e)}'}), 500
 
@@ -627,6 +670,177 @@ def get_token_details_endpoint():
         return jsonify(result)
     except Exception as e:
         return jsonify({'error': f'Error getting token details: {str(e)}'}), 500
+
+def refresh_token(session_id):
+    """Refresh an expired token using stored credentials"""
+    if session_id not in auth_credentials:
+        return None
+    
+    creds = auth_credentials[session_id]
+    auth_method = creds['auth_method']
+    jamf_url = creds['jamf_url']
+    
+    try:
+        if auth_method == 'oauth2':
+            # OAuth2 token refresh
+            client_id = creds['client_id']
+            client_secret = creds['client_secret']
+            
+            auth_string = f"{client_id}:{client_secret}"
+            auth_bytes = auth_string.encode('ascii')
+            auth_b64 = base64.b64encode(auth_bytes).decode('ascii')
+            
+            token_url = f"{jamf_url}/api/oauth/token"
+            headers = {
+                'Authorization': f'Basic {auth_b64}',
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
+            
+            token_data = {'grant_type': 'client_credentials'}
+            response = requests.post(token_url, headers=headers, data=token_data)
+            
+            if response.status_code == 200:
+                token_info = response.json()
+                access_token = token_info.get('access_token')
+                
+                # Update stored token
+                tokens[session_id] = {
+                    'access_token': access_token,
+                    'jamf_url': jamf_url,
+                    'auth_method': 'oauth2',
+                    'expires_in': token_info.get('expires_in', 3600),
+                    'refreshed_at': datetime.now()
+                }
+                return access_token
+                
+        elif auth_method == 'username_password':
+            # Username/password token refresh
+            username = creds['username']
+            password = creds['password']
+            
+            auth_string = f"{username}:{password}"
+            auth_bytes = auth_string.encode('ascii')
+            auth_b64 = base64.b64encode(auth_bytes).decode('ascii')
+            
+            token_url = f"{jamf_url}/api/v1/auth/token"
+            headers = {
+                'Authorization': f'Basic {auth_b64}',
+                'Accept': 'application/json'
+            }
+            
+            response = requests.post(token_url, headers=headers)
+            
+            if response.status_code == 200:
+                token_info = response.json()
+                access_token = token_info.get('token')
+                
+                # Update stored token
+                tokens[session_id] = {
+                    'access_token': access_token,
+                    'jamf_url': jamf_url,
+                    'auth_method': 'username_password',
+                    'expires_in': token_info.get('expires', 1800),
+                    'refreshed_at': datetime.now()
+                }
+                return access_token
+                
+    except Exception as e:
+        print(f"Token refresh failed for session {session_id}: {str(e)}")
+        
+    return None
+
+def make_jamf_request(session_id, method, endpoint, **kwargs):
+    """Make a request to Jamf API with automatic token refresh on 401"""
+    if session_id not in tokens:
+        return None, 401, "Invalid session"
+    
+    token_info = tokens[session_id]
+    jamf_url = token_info['jamf_url']
+    access_token = token_info['access_token']
+    
+    url = f"{jamf_url}/{endpoint.lstrip('/')}"
+    headers = {
+        'Authorization': f'Bearer {access_token}',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+    }
+    
+    # Add any additional headers
+    if 'headers' in kwargs:
+        headers.update(kwargs['headers'])
+        del kwargs['headers']
+    
+    # Make the initial request
+    try:
+        response = requests.request(method, url, headers=headers, **kwargs)
+        
+        # If we get a 401, try to refresh the token and retry
+        if response.status_code == 401:
+            print(f"Token expired for session {session_id}, attempting refresh...")
+            new_token = refresh_token(session_id)
+            
+            if new_token:
+                print(f"Token refreshed successfully for session {session_id}")
+                # Update headers with new token and retry
+                headers['Authorization'] = f'Bearer {new_token}'
+                response = requests.request(method, url, headers=headers, **kwargs)
+            else:
+                print(f"Token refresh failed for session {session_id}")
+                # Remove invalid session
+                if session_id in tokens:
+                    del tokens[session_id]
+                if session_id in auth_credentials:
+                    del auth_credentials[session_id]
+                return None, 401, "Token refresh failed. Please re-authenticate."
+        
+        return response.json() if response.content else {}, response.status_code, None
+        
+    except requests.exceptions.RequestException as e:
+        return None, 500, f"Request error: {str(e)}"
+    except json.JSONDecodeError:
+        return {}, response.status_code, None
+    except Exception as e:
+        return None, 500, f"Unexpected error: {str(e)}"
+
+# Add an endpoint to check token refresh status
+@app.route('/api/token/status', methods=['GET'])
+def token_status():
+    """Check token status and provide refresh information"""
+    session_id = request.headers.get('X-Session-ID')
+    if not session_id:
+        return jsonify({'error': 'Session ID required'}), 401
+    
+    if session_id not in tokens:
+        return jsonify({'error': 'Invalid session'}), 401
+    
+    token_info = tokens[session_id]
+    auth_available = session_id in auth_credentials
+    
+    return jsonify({
+        'session_id': session_id,
+        'auth_method': token_info.get('auth_method'),
+        'expires_in': token_info.get('expires_in'),
+        'refresh_available': auth_available,
+        'refreshed_at': token_info.get('refreshed_at').isoformat() if token_info.get('refreshed_at') else None
+    })
+
+# Add a simple test endpoint to trigger 401 scenarios
+@app.route('/api/test/protected', methods=['GET'])
+def test_protected():
+    """Test endpoint to verify token refresh functionality"""
+    session_id = request.headers.get('X-Session-ID')
+    if not session_id:
+        return jsonify({'error': 'Session ID required'}), 401
+    
+    result, status_code, error = make_jamf_request(session_id, 'GET', '/api/v1/auth')
+    
+    if error:
+        return jsonify({'error': error}), status_code
+    
+    return jsonify({
+        'message': 'Token is valid',
+        'auth_info': result
+    }), status_code
 
 if __name__ == '__main__':
     app.run(debug=True, port=8003)

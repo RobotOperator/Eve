@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { prism } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import xmlFormatter from 'xml-formatter';
+import apiClient from '../utils/apiClient';
 
 const PolicyManager = ({ sessionId, onBack }) => {
   const [policies, setPolicies] = useState([]);
@@ -15,6 +16,7 @@ const PolicyManager = ({ sessionId, onBack }) => {
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [templates, setTemplates] = useState([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [error, setError] = useState('');
 
   // Default policy template
   const defaultPolicyTemplate = `<policy>
@@ -35,8 +37,9 @@ const PolicyManager = ({ sessionId, onBack }) => {
 </policy>`;
 
   useEffect(() => {
+    apiClient.setSession(sessionId);
     loadPolicies();
-  }, []);
+  }, [sessionId]);
 
   // Function to format XML with proper indentation
   const formatXml = (xml) => {
@@ -57,22 +60,20 @@ const PolicyManager = ({ sessionId, onBack }) => {
 
   const loadPolicies = async () => {
     setLoading(true);
+    setError('');
     try {
-      const response = await fetch('/api/policies', {
-        headers: {
-          'X-Session-ID': sessionId,
-          'Accept': 'application/json'
-        }
-      });
+      const response = await apiClient.get('/api/policies');
       
       if (response.ok) {
         const data = await response.json();
         setPolicies(data.policies || []);
       } else {
-        console.error('Failed to load policies');
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to load policies');
       }
     } catch (error) {
       console.error('Error loading policies:', error);
+      setError('Network error while loading policies');
     } finally {
       setLoading(false);
     }
@@ -80,22 +81,20 @@ const PolicyManager = ({ sessionId, onBack }) => {
 
   const getPolicyDetails = async (id) => {
     setLoading(true);
+    setError('');
     try {
-      const response = await fetch(`/api/policies/${id}`, {
-        headers: {
-          'X-Session-ID': sessionId,
-          'Accept': 'application/json'
-        }
-      });
+      const response = await apiClient.get(`/api/policies/${id}`);
       
       if (response.ok) {
         const data = await response.json();
         setSelectedPolicy(data.policy || data);
       } else {
-        console.error('Failed to get policy details');
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to get policy details');
       }
     } catch (error) {
       console.error('Error getting policy details:', error);
+      setError('Network error while getting policy details');
     } finally {
       setLoading(false);
     }
@@ -107,23 +106,21 @@ const PolicyManager = ({ sessionId, onBack }) => {
     }
 
     setLoading(true);
+    setError('');
     try {
-      const response = await fetch(`/api/policies/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'X-Session-ID': sessionId,
-          'Accept': 'application/json'
-        }
-      });
+      const response = await apiClient.delete(`/api/policies/${id}`);
       
       if (response.ok) {
         await loadPolicies(); // Refresh the list
         alert('Policy deleted successfully');
       } else {
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to delete policy');
         alert('Failed to delete policy');
       }
     } catch (error) {
       console.error('Error deleting policy:', error);
+      setError('Network error while deleting policy');
       alert('Error deleting policy');
     } finally {
       setLoading(false);
@@ -132,13 +129,9 @@ const PolicyManager = ({ sessionId, onBack }) => {
 
   const getPolicyXml = async (id) => {
     setLoading(true);
+    setError('');
     try {
-      const response = await fetch(`/api/policies/${id}/xml`, {
-        headers: {
-          'X-Session-ID': sessionId,
-          'Accept': 'application/json'
-        }
-      });
+      const response = await apiClient.get(`/api/policies/${id}/xml`);
       
       if (response.ok) {
         const data = await response.json();
@@ -146,11 +139,13 @@ const PolicyManager = ({ sessionId, onBack }) => {
         setEditingXml(data.xml);
         setViewMode('xml');
       } else {
-        console.error('Failed to get policy XML');
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to get policy XML');
         alert('Failed to get policy XML');
       }
     } catch (error) {
       console.error('Error getting policy XML:', error);
+      setError('Network error while getting policy XML');
       alert('Error getting policy XML');
     } finally {
       setLoading(false);
@@ -159,15 +154,9 @@ const PolicyManager = ({ sessionId, onBack }) => {
 
   const createPolicy = async () => {
     setIsCreating(true);
+    setError('');
     try {
-      const response = await fetch('/api/policies', {
-        method: 'POST',
-        headers: {
-          'X-Session-ID': sessionId,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ xml: editingXml })
-      });
+      const response = await apiClient.post('/api/policies', { xml: editingXml });
       
       if (response.ok) {
         await loadPolicies(); // Refresh the list
@@ -175,11 +164,13 @@ const PolicyManager = ({ sessionId, onBack }) => {
         setEditingXml('');
         alert('Policy created successfully');
       } else {
-        const error = await response.json();
-        alert(`Failed to create policy: ${error.error || 'Unknown error'}`);
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to create policy');
+        alert(`Failed to create policy: ${errorData.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error creating policy:', error);
+      setError('Network error while creating policy');
       alert('Error creating policy');
     } finally {
       setIsCreating(false);
@@ -188,26 +179,22 @@ const PolicyManager = ({ sessionId, onBack }) => {
 
   const updatePolicy = async (id) => {
     setIsUpdating(true);
+    setError('');
     try {
-      const response = await fetch(`/api/policies/${id}`, {
-        method: 'PUT',
-        headers: {
-          'X-Session-ID': sessionId,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ xml: editingXml })
-      });
+      const response = await apiClient.put(`/api/policies/${id}`, { xml: editingXml });
       
       if (response.ok) {
         await loadPolicies(); // Refresh the list
         setPolicyXml(editingXml); // Update displayed XML
         alert('Policy updated successfully');
       } else {
-        const error = await response.json();
-        alert(`Failed to update policy: ${error.error || 'Unknown error'}`);
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to update policy');
+        alert(`Failed to update policy: ${errorData.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error updating policy:', error);
+      setError('Network error while updating policy');
       alert('Error updating policy');
     } finally {
       setIsUpdating(false);
@@ -216,23 +203,21 @@ const PolicyManager = ({ sessionId, onBack }) => {
 
   const loadTemplates = async () => {
     setLoadingTemplates(true);
+    setError('');
     try {
-      const response = await fetch('/api/policy-templates', {
-        headers: {
-          'X-Session-ID': sessionId,
-          'Accept': 'application/json'
-        }
-      });
+      const response = await apiClient.get('/api/policy-templates');
       
       if (response.ok) {
         const data = await response.json();
         setTemplates(data.templates || []);
       } else {
-        console.error('Failed to load templates');
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to load templates');
         alert('Failed to load policy templates');
       }
     } catch (error) {
       console.error('Error loading templates:', error);
+      setError('Network error while loading templates');
       alert('Error loading policy templates');
     } finally {
       setLoadingTemplates(false);

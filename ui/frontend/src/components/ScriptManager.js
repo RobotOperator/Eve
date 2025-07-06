@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import apiClient from '../utils/apiClient';
 
 const ScriptManager = ({ sessionId, onBack }) => {
   const [scripts, setScripts] = useState([]);
@@ -7,29 +8,29 @@ const ScriptManager = ({ sessionId, onBack }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingScript, setEditingScript] = useState(null);
   const [newScript, setNewScript] = useState({ name: '', content: '' });
+  const [error, setError] = useState('');
 
   useEffect(() => {
+    apiClient.setSession(sessionId);
     loadScripts();
-  }, []);
+  }, [sessionId]);
 
   const loadScripts = async () => {
     setLoading(true);
+    setError('');
     try {
-      const response = await fetch('/api/scripts', {
-        headers: {
-          'X-Session-ID': sessionId,
-          'Accept': 'application/json'
-        }
-      });
+      const response = await apiClient.get('/api/scripts');
       
       if (response.ok) {
         const data = await response.json();
         setScripts(data.scripts || []);
       } else {
-        console.error('Failed to load scripts');
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to load scripts');
       }
     } catch (error) {
       console.error('Error loading scripts:', error);
+      setError('Network error while loading scripts');
     } finally {
       setLoading(false);
     }
@@ -37,22 +38,20 @@ const ScriptManager = ({ sessionId, onBack }) => {
 
   const getScriptDetails = async (id) => {
     setLoading(true);
+    setError('');
     try {
-      const response = await fetch(`/api/scripts/${id}`, {
-        headers: {
-          'X-Session-ID': sessionId,
-          'Accept': 'application/json'
-        }
-      });
+      const response = await apiClient.get(`/api/scripts/${id}`);
       
       if (response.ok) {
         const data = await response.json();
         setSelectedScript(data.script || data);
       } else {
-        console.error('Failed to get script details');
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to get script details');
       }
     } catch (error) {
       console.error('Error getting script details:', error);
+      setError('Network error while getting script details');
     } finally {
       setLoading(false);
     }
@@ -64,23 +63,21 @@ const ScriptManager = ({ sessionId, onBack }) => {
     }
 
     setLoading(true);
+    setError('');
     try {
-      const response = await fetch(`/api/scripts/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'X-Session-ID': sessionId,
-          'Accept': 'application/json'
-        }
-      });
+      const response = await apiClient.delete(`/api/scripts/${id}`);
       
       if (response.ok) {
         await loadScripts(); // Refresh the list
         alert('Script deleted successfully');
       } else {
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to delete script');
         alert('Failed to delete script');
       }
     } catch (error) {
       console.error('Error deleting script:', error);
+      setError('Network error while deleting script');
       alert('Error deleting script');
     } finally {
       setLoading(false);
@@ -94,17 +91,11 @@ const ScriptManager = ({ sessionId, onBack }) => {
     }
 
     setLoading(true);
+    setError('');
     try {
-      const response = await fetch('/api/scripts', {
-        method: 'POST',
-        headers: {
-          'X-Session-ID': sessionId,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          name: newScript.name.trim(),
-          content: newScript.content
-        })
+      const response = await apiClient.post('/api/scripts', {
+        name: newScript.name.trim(),
+        content: newScript.content
       });
       
       if (response.ok) {
@@ -114,11 +105,13 @@ const ScriptManager = ({ sessionId, onBack }) => {
         setNewScript({ name: '', content: '' });
         alert('Script created successfully');
       } else {
-        const error = await response.json();
-        alert(`Failed to create script: ${error.error || 'Unknown error'}`);
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to create script');
+        alert(`Failed to create script: ${errorData.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error creating script:', error);
+      setError('Network error while creating script');
       alert('Error creating script');
     } finally {
       setLoading(false);
@@ -132,27 +125,21 @@ const ScriptManager = ({ sessionId, onBack }) => {
     }
 
     setLoading(true);
+    setError('');
     try {
-      const response = await fetch(`/api/scripts/${editingScript.id}`, {
-        method: 'PUT',
-        headers: {
-          'X-Session-ID': sessionId,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          content: editingScript.content
-        })
+      const response = await apiClient.put(`/api/scripts/${editingScript.id}`, {
+        content: editingScript.content
       });
       
       if (response.ok) {
-        const data = await response.json();
         await loadScripts(); // Refresh the list
         setEditingScript(null);
         setSelectedScript(null);
         alert('Script updated successfully');
       } else {
-        const error = await response.json();
-        alert(`Failed to update script: ${error.error || 'Unknown error'}`);
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to update script');
+        alert(`Failed to update script: ${errorData.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error updating script:', error);

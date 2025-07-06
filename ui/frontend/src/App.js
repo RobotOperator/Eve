@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 import AuthForm from './components/AuthForm';
 import Dashboard from './components/Dashboard';
+import apiClient from './utils/apiClient';
 
 function App() {
   const [sessionId, setSessionId] = useState(null);
@@ -13,22 +14,22 @@ function App() {
     if (savedSessionId) {
       setSessionId(savedSessionId);
       setIsAuthenticated(true);
+      apiClient.setSession(savedSessionId);
     }
   }, []);
 
-  const handleAuthSuccess = (sessionId) => {
-    setSessionId(sessionId);
+  const handleAuthSuccess = (newSessionId) => {
+    setSessionId(newSessionId);
     setIsAuthenticated(true);
+    apiClient.setSession(newSessionId);
     // Save session to localStorage
-    localStorage.setItem('eve_session_id', sessionId);
+    localStorage.setItem('eve_session_id', newSessionId);
   };
 
   const handleLogout = () => {
     setSessionId(null);
     setIsAuthenticated(false);
-    // Clear session from localStorage
-    localStorage.removeItem('eve_session_id');
-    localStorage.removeItem('eve_auth_data');
+    apiClient.clearAuth();
   };
 
   return (

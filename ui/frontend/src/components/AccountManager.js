@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import apiClient from '../utils/apiClient';
 
 const AccountManager = ({ sessionId, onBack }) => {
   const [users, setUsers] = useState([]);
@@ -6,42 +7,39 @@ const AccountManager = ({ sessionId, onBack }) => {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('users');
   const [selectedGroup, setSelectedGroup] = useState(null);
+  const [error, setError] = useState('');
 
   useEffect(() => {
+    apiClient.setSession(sessionId);
     loadAccounts();
-  }, []);
+  }, [sessionId]);
 
   const loadAccounts = async () => {
     setLoading(true);
+    setError('');
     try {
-      const response = await fetch('/api/accounts', {
-        headers: {
-          'X-Session-ID': sessionId,
-          'Accept': 'application/json'
-        }
-      });
+      const response = await apiClient.get('/api/accounts');
       
       if (response.ok) {
         const userData = await response.json();
         setUsers(userData || []);
         
         // Also load groups
-        const groupResponse = await fetch('/api/groups', {
-          headers: {
-            'X-Session-ID': sessionId,
-            'Accept': 'application/json'
-          }
-        });
+        const groupResponse = await apiClient.get('/api/groups');
         
         if (groupResponse.ok) {
           const groupData = await groupResponse.json();
           setGroups(groupData || []);
+        } else {
+          setError('Failed to load groups');
         }
       } else {
-        console.error('Failed to load accounts');
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to load accounts');
       }
     } catch (error) {
       console.error('Error loading accounts:', error);
+      setError('Network error while loading accounts');
     } finally {
       setLoading(false);
     }
@@ -49,22 +47,20 @@ const AccountManager = ({ sessionId, onBack }) => {
 
   const getGroupDetails = async (id) => {
     setLoading(true);
+    setError('');
     try {
-      const response = await fetch(`/api/groups/${id}`, {
-        headers: {
-          'X-Session-ID': sessionId,
-          'Accept': 'application/json'
-        }
-      });
+      const response = await apiClient.get(`/api/groups/${id}`);
       
       if (response.ok) {
         const data = await response.json();
         setSelectedGroup(data.group || data);
       } else {
-        console.error('Failed to get group details');
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to get group details');
       }
     } catch (error) {
       console.error('Error getting group details:', error);
+      setError('Network error while getting group details');
     } finally {
       setLoading(false);
     }
@@ -154,6 +150,17 @@ const AccountManager = ({ sessionId, onBack }) => {
       </div>
       
       <div className="card-body">
+        {error && (
+          <div className="alert alert-danger" role="alert">
+            <strong>Error:</strong> {error}
+            <button 
+              type="button" 
+              className="btn-close float-end" 
+              onClick={() => setError('')}
+            ></button>
+          </div>
+        )}
+        
         <ul className="nav nav-tabs mb-3">
           <li className="nav-item">
             <button 
