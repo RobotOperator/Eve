@@ -232,7 +232,7 @@ Thumbs.db
 *.json.bak
 
 # Build artifacts
-ui/frontend/build/
+# ui/frontend/build/  # Commented out - we want to commit the build
 ui/frontend/dist/
 
 # Package files
