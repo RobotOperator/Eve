@@ -315,6 +315,193 @@ def get_computer_by_id_endpoint(computer_id):
     
     return jsonify(result), status_code
 
+# Extension Attributes API endpoints
+@app.route('/api/extension-attributes', methods=['GET'])
+def get_extension_attributes_endpoint():
+    """Get all computer extension attributes"""
+    session_id = request.headers.get('X-Session-ID')
+    if not session_id:
+        return jsonify({'error': 'Session ID required'}), 401
+    
+    # Try the endpoint without XML headers first
+    result, status_code, error = make_jamf_request(session_id, 'GET', '/JSSResource/computerextensionattributes')
+    
+    if error and 'Request error' in error:
+        # If that fails, try with XML headers
+        result, status_code, error = make_jamf_request(
+            session_id, 
+            'GET', 
+            '/JSSResource/computerextensionattributes',
+            headers={'Accept': 'application/xml'}
+        )
+    
+    if error:
+        return jsonify({'error': error}), status_code
+    
+    return jsonify(result), status_code
+
+@app.route('/api/extension-attributes/<int:attribute_id>', methods=['GET'])
+def get_extension_attribute_by_id_endpoint(attribute_id):
+    """Get extension attribute by ID"""
+    session_id = request.headers.get('X-Session-ID')
+    if not session_id:
+        return jsonify({'error': 'Session ID required'}), 401
+    
+    result, status_code, error = make_jamf_request(session_id, 'GET', f'/JSSResource/computerextensionattributes/id/{attribute_id}')
+    
+    if error:
+        return jsonify({'error': error}), status_code
+    
+    return jsonify(result), status_code
+
+@app.route('/api/extension-attributes', methods=['POST'])
+def create_extension_attribute_endpoint():
+    """Create a new computer extension attribute"""
+    session_id = request.headers.get('X-Session-ID')
+    if not session_id:
+        return jsonify({'error': 'Session ID required'}), 401
+    
+    data = request.get_json()
+    if not data or 'xml_content' not in data:
+        return jsonify({'error': 'XML content required'}), 400
+    
+    xml_content = data['xml_content']
+    
+    # Write XML content to a temporary file
+    temp_file = '/tmp/extension_attribute_create.xml'
+    try:
+        with open(temp_file, 'w') as f:
+            f.write(xml_content)
+        
+        # Get authentication data
+        auth_data = auth_credentials.get(session_id)
+        if not auth_data:
+            return jsonify({'error': 'Session expired'}), 401
+        
+        # Get the token from the tokens store
+        token_data = tokens.get(session_id)
+        if not token_data:
+            return jsonify({'error': 'Session expired'}), 401
+        
+        bearer_token = token_data.get('access_token')
+        if not bearer_token:
+            return jsonify({'error': 'No valid token found'}), 401
+        
+        # Use the computers module function
+        result = computers.create_computer_extension_attribute(
+            auth_data['jamf_url'], 
+            bearer_token, 
+            temp_file
+        )
+        
+        # Clean up temp file
+        os.remove(temp_file)
+        
+        # Try to parse the result as JSON to return proper response
+        try:
+            if isinstance(result, str):
+                # If it's XML response, return success message
+                if '<computer_extension_attribute>' in result:
+                    return jsonify({'message': 'Extension attribute created successfully', 'xml_response': result}), 201
+                else:
+                    return jsonify({'error': f'Unexpected response: {result}'}), 400
+            else:
+                return jsonify({'message': 'Extension attribute created successfully', 'response': result}), 201
+        except Exception as e:
+            return jsonify({'error': f'Error processing response: {str(e)}', 'raw_response': str(result)}), 500
+        
+    except Exception as e:
+        # Clean up temp file if it exists
+        if os.path.exists(temp_file):
+            os.remove(temp_file)
+        return jsonify({'error': f'Failed to create extension attribute: {str(e)}'}), 500
+
+@app.route('/api/extension-attributes/<int:attribute_id>', methods=['PUT'])
+def update_extension_attribute_endpoint(attribute_id):
+    """Update an existing computer extension attribute"""
+    session_id = request.headers.get('X-Session-ID')
+    if not session_id:
+        return jsonify({'error': 'Session ID required'}), 401
+    
+    data = request.get_json()
+    if not data or 'xml_content' not in data:
+        return jsonify({'error': 'XML content required'}), 400
+    
+    xml_content = data['xml_content']
+    
+    # Write XML content to a temporary file
+    temp_file = '/tmp/extension_attribute_update.xml'
+    try:
+        with open(temp_file, 'w') as f:
+            f.write(xml_content)
+        
+        # Get authentication data
+        auth_data = auth_credentials.get(session_id)
+        if not auth_data:
+            return jsonify({'error': 'Session expired'}), 401
+        
+        # Get the token from the tokens store
+        token_data = tokens.get(session_id)
+        if not token_data:
+            return jsonify({'error': 'Session expired'}), 401
+        
+        bearer_token = token_data.get('access_token')
+        if not bearer_token:
+            return jsonify({'error': 'No valid token found'}), 401
+        
+        # Use the computers module function
+        result = computers.update_computer_extension_by_id(
+            auth_data['jamf_url'], 
+            bearer_token, 
+            attribute_id,
+            temp_file
+        )
+        
+        # Clean up temp file
+        os.remove(temp_file)
+        
+        return result, 200
+        
+    except Exception as e:
+        # Clean up temp file if it exists
+        if os.path.exists(temp_file):
+            os.remove(temp_file)
+        return jsonify({'error': f'Failed to update extension attribute: {str(e)}'}), 500
+
+@app.route('/api/extension-attributes/<int:attribute_id>', methods=['DELETE'])
+def delete_extension_attribute_endpoint(attribute_id):
+    """Delete a computer extension attribute"""
+    session_id = request.headers.get('X-Session-ID')
+    if not session_id:
+        return jsonify({'error': 'Session ID required'}), 401
+    
+    try:
+        # Get authentication data
+        auth_data = auth_credentials.get(session_id)
+        if not auth_data:
+            return jsonify({'error': 'Session expired'}), 401
+        
+        # Get the token from the tokens store
+        token_data = tokens.get(session_id)
+        if not token_data:
+            return jsonify({'error': 'Session expired'}), 401
+        
+        bearer_token = token_data.get('access_token')
+        if not bearer_token:
+            return jsonify({'error': 'No valid token found'}), 401
+        
+        # Use the computers module function
+        result = computers.delete_computer_extension_by_id(
+            auth_data['jamf_url'], 
+            bearer_token, 
+            attribute_id
+        )
+        
+        return jsonify({'message': 'Extension attribute deleted successfully'}), 200
+        
+    except Exception as e:
+        return jsonify({'error': f'Failed to delete extension attribute: {str(e)}'}), 500
+
 # Policies API endpoints
 @app.route('/api/policies', methods=['GET'])
 def get_policies_endpoint():
@@ -745,7 +932,7 @@ def refresh_token(session_id):
                 return access_token
                 
     except Exception as e:
-        print(f"Token refresh failed for session {session_id}: {str(e)}")
+        pass
         
     return None
 
@@ -776,16 +963,13 @@ def make_jamf_request(session_id, method, endpoint, **kwargs):
         
         # If we get a 401, try to refresh the token and retry
         if response.status_code == 401:
-            print(f"Token expired for session {session_id}, attempting refresh...")
             new_token = refresh_token(session_id)
             
             if new_token:
-                print(f"Token refreshed successfully for session {session_id}")
                 # Update headers with new token and retry
                 headers['Authorization'] = f'Bearer {new_token}'
                 response = requests.request(method, url, headers=headers, **kwargs)
             else:
-                print(f"Token refresh failed for session {session_id}")
                 # Remove invalid session
                 if session_id in tokens:
                     del tokens[session_id]
@@ -798,7 +982,29 @@ def make_jamf_request(session_id, method, endpoint, **kwargs):
     except requests.exceptions.RequestException as e:
         return None, 500, f"Request error: {str(e)}"
     except json.JSONDecodeError:
-        return {}, response.status_code, None
+        # If JSON decode fails, try to return XML content or raw text
+        try:
+            if response.content:
+                content_type = response.headers.get('content-type', '').lower()
+                if 'xml' in content_type:
+                    # For XML responses, try to parse and convert to a basic structure
+                    import xml.etree.ElementTree as ET
+                    root = ET.fromstring(response.text)
+                    
+                    # Convert XML to a basic dict structure for extension attributes
+                    if root.tag == 'computer_extension_attributes':
+                        attributes = []
+                        for attr in root.findall('computer_extension_attribute'):
+                            attr_data = {}
+                            for child in attr:
+                                attr_data[child.tag] = child.text
+                            attributes.append(attr_data)
+                        return {'computer_extension_attributes': attributes}, response.status_code, None
+                    
+                return {'raw_content': response.text}, response.status_code, None
+            return {}, response.status_code, None
+        except Exception as xml_e:
+            return {'raw_content': response.text}, response.status_code, None
     except Exception as e:
         return None, 500, f"Unexpected error: {str(e)}"
 

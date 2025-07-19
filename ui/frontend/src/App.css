@@ -2,6 +2,259 @@
 .app-container {
   min-height: 100vh;
   background: white;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Dark mode styles */
+.app-container.dark-mode {
+  background: #1a1a1a;
+  color: #ffffff;
+}
+
+/* Dark mode for Bootstrap components when using data-bs-theme */
+[data-bs-theme="dark"] .app-container {
+  background: #1a1a1a;
+  color: #ffffff;
+}
+
+[data-bs-theme="dark"] .navbar-custom {
+  background: #2d3748 !important;
+  border-bottom: 1px solid #4a5568;
+}
+
+[data-bs-theme="dark"] .text-dark-custom {
+  color: #ffffff !important;
+}
+
+[data-bs-theme="dark"] .auth-card,
+[data-bs-theme="dark"] .dashboard-card {
+  background: #2d3748;
+  border: 1px solid #4a5568;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+[data-bs-theme="dark"] .menu-item-card {
+  background: #2d3748;
+  border: 1px solid #4a5568;
+}
+
+[data-bs-theme="dark"] .menu-item-card:hover {
+  background: #4a5568;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+}
+
+[data-bs-theme="dark"] .card {
+  background: #2d3748;
+  border: 1px solid #4a5568;
+  color: #ffffff;
+}
+
+[data-bs-theme="dark"] .card-header {
+  background: #4a5568;
+  border-bottom: 1px solid #718096;
+  color: #ffffff;
+}
+
+[data-bs-theme="dark"] .form-control {
+  background: #4a5568;
+  border: 1px solid #718096;
+  color: #ffffff;
+}
+
+[data-bs-theme="dark"] .form-control:focus {
+  background: #4a5568;
+  border-color: #63b3ed;
+  box-shadow: 0 0 0 0.2rem rgba(99, 179, 237, 0.25);
+  color: #ffffff;
+}
+
+[data-bs-theme="dark"] .form-control::placeholder {
+  color: #a0aec0;
+}
+
+[data-bs-theme="dark"] .table {
+  color: #ffffff;
+}
+
+[data-bs-theme="dark"] .table-striped > tbody > tr:nth-of-type(odd) > td {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+[data-bs-theme="dark"] .table th {
+  border-color: #4a5568;
+  color: #ffffff;
+}
+
+[data-bs-theme="dark"] .table td {
+  border-color: #4a5568;
+}
+
+[data-bs-theme="dark"] .alert-info {
+  background: #2c5aa0;
+  border-color: #1e3a5f;
+  color: #ffffff;
+}
+
+[data-bs-theme="dark"] .alert-danger {
+  background: #c53030;
+  border-color: #9b2c2c;
+  color: #ffffff;
+}
+
+[data-bs-theme="dark"] .alert-warning {
+  background: #d69e2e;
+  border-color: #b7791f;
+  color: #1a1a1a;
+}
+
+[data-bs-theme="dark"] .btn-outline-secondary {
+  color: #a0aec0;
+  border-color: #4a5568;
+}
+
+[data-bs-theme="dark"] .btn-outline-secondary:hover {
+  background: #4a5568;
+  border-color: #718096;
+  color: #ffffff;
+}
+
+[data-bs-theme="dark"] .btn-outline-primary {
+  color: #63b3ed;
+  border-color: #3182ce;
+}
+
+[data-bs-theme="dark"] .btn-outline-primary:hover {
+  background: #3182ce;
+  border-color: #2c5aa0;
+  color: #ffffff;
+}
+
+[data-bs-theme="dark"] .btn-outline-danger {
+  color: #fc8181;
+  border-color: #e53e3e;
+}
+
+[data-bs-theme="dark"] .btn-outline-danger:hover {
+  background: #e53e3e;
+  border-color: #c53030;
+  color: #ffffff;
+}
+
+[data-bs-theme="dark"] .btn-outline-info {
+  color: #63b3ed;
+  border-color: #3182ce;
+}
+
+[data-bs-theme="dark"] .btn-outline-info:hover {
+  background: #3182ce;
+  border-color: #2c5aa0;
+  color: #ffffff;
+}
+
+[data-bs-theme="dark"] .nav-tabs {
+  border-bottom: 1px solid #4a5568;
+}
+
+[data-bs-theme="dark"] .nav-tabs .nav-link {
+  color: #a0aec0;
+  border: 1px solid transparent;
+}
+
+[data-bs-theme="dark"] .nav-tabs .nav-link:hover {
+  border-color: #4a5568;
+  color: #ffffff;
+}
+
+[data-bs-theme="dark"] .nav-tabs .nav-link.active {
+  color: #ffffff;
+  background: #2d3748;
+  border-color: #4a5568 #4a5568 #2d3748;
+}
+
+[data-bs-theme="dark"] .badge.bg-info {
+  background: #3182ce !important;
+  color: #ffffff;
+}
+
+/* Syntax highlighter dark mode adjustments */
+[data-bs-theme="dark"] .json-tree-viewer {
+  background: #1a202c !important;
+  border: 1px solid #4a5568 !important;
+  color: #ffffff;
+}
+
+[data-bs-theme="dark"] pre[class*="language-"] {
+  background: #1a202c !important;
+  border: 1px solid #4a5568 !important;
+}
+
+[data-bs-theme="dark"] code[class*="language-"] {
+  color: #ffffff;
+}
+
+/* Dark mode styles for script content and pre elements */
+[data-bs-theme="dark"] pre {
+  background: #1a202c !important;
+  border: 1px solid #4a5568 !important;
+  color: #ffffff !important;
+}
+
+[data-bs-theme="dark"] .bg-light {
+  background: #1a202c !important;
+  color: #ffffff !important;
+}
+
+[data-bs-theme="dark"] .list-group-item {
+  background: #2d3748;
+  border-color: #4a5568;
+  color: #ffffff;
+}
+
+[data-bs-theme="dark"] .text-muted {
+  color: #a0aec0 !important;
+}
+
+/* Dark mode toggle button styling */
+[data-bs-theme="dark"] .btn-outline-secondary {
+  transition: all 0.3s ease;
+}
+
+.btn-outline-secondary {
+  transition: all 0.3s ease;
+}
+
+/* Maximize content width on larger screens */
+.container-fluid {
+  max-width: none !important;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+/* Responsive padding for different screen sizes */
+@media (min-width: 576px) {
+  .container-fluid {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+@media (min-width: 992px) {
+  .container-fluid {
+    padding-left: 3rem;
+    padding-right: 3rem;
+  }
+}
+
+@media (min-width: 1400px) {
+  .container-fluid {
+    padding-left: 4rem;
+    padding-right: 4rem;
+  }
+}
+
+/* Ensure cards take full available width */
+.card {
+  width: 100%;
 }
 
 .loading-spinner {
@@ -327,6 +580,26 @@
   line-height: 1.4;
 }
 
+/* Dark mode styles for template cards */
+[data-bs-theme="dark"] .template-card {
+  background: #2d3748;
+  border: 1px solid #4a5568;
+}
+
+[data-bs-theme="dark"] .template-card:hover {
+  background: #4a5568;
+  border-color: #63b3ed;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+[data-bs-theme="dark"] .template-card .card-title {
+  color: #ffffff !important;
+}
+
+[data-bs-theme="dark"] .template-card .card-text {
+  color: #a0aec0 !important;
+}
+
 /* Modal backdrop fix */
 .modal.show {
   background-color: rgba(0, 0, 0, 0.5);
@@ -364,4 +637,129 @@
 
 .xml-viewer .token.prolog {
   color: #6f42c1 !important;
+}
+
+/* Script content styling */
+.script-content {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  color: #212529;
+  font-family: 'Courier New', Consolas, 'Liberation Mono', Menlo, monospace;
+  line-height: 1.4;
+}
+
+[data-bs-theme="dark"] .script-content {
+  background: #1a202c !important;
+  border: 1px solid #4a5568 !important;
+  color: #ffffff !important;
+}
+
+[data-bs-theme="dark"] .modal-content {
+  background: #2d3748;
+  border: 1px solid #4a5568;
+}
+
+[data-bs-theme="dark"] .modal-header {
+  border-bottom: 1px solid #4a5568;
+}
+
+[data-bs-theme="dark"] .modal-footer {
+  border-top: 1px solid #4a5568;
+}
+
+[data-bs-theme="dark"] .modal-title {
+  color: #ffffff;
+}
+
+/* Floating helper pane styles */
+.helper-pane-floating {
+  transition: all 0.3s ease;
+}
+
+[data-bs-theme="dark"] .helper-pane-floating {
+  background: #2d3748 !important;
+  border: 1px solid #4a5568 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+[data-bs-theme="dark"] .helper-pane-floating .card-header {
+  background: #4a5568;
+  border-bottom: 1px solid #718096;
+  color: #ffffff;
+}
+
+[data-bs-theme="dark"] .helper-pane-floating .card-body {
+  background: #2d3748;
+  color: #ffffff;
+}
+
+/* Enhanced highlighting for inserted XML content */
+.policy-xml-editor::selection {
+  background: #ffeb3b;
+  color: #000;
+}
+
+.policy-xml-editor::-moz-selection {
+  background: #ffeb3b;
+  color: #000;
+}
+
+[data-bs-theme="dark"] .policy-xml-editor::selection {
+  background: #ffc107;
+  color: #000;
+}
+
+[data-bs-theme="dark"] .policy-xml-editor::-moz-selection {
+  background: #ffc107;
+  color: #000;
+}
+
+/* XML insertion highlight animation */
+.policy-xml-editor.xml-insert-highlight::selection {
+  background: #28a745 !important;
+  color: #fff !important;
+  animation: highlight-pulse 1.5s ease-in-out;
+}
+
+.policy-xml-editor.xml-insert-highlight::-moz-selection {
+  background: #28a745 !important;
+  color: #fff !important;
+  animation: highlight-pulse 1.5s ease-in-out;
+}
+
+[data-bs-theme="dark"] .policy-xml-editor.xml-insert-highlight::selection {
+  background: #20c997 !important;
+  color: #000 !important;
+  animation: highlight-pulse 1.5s ease-in-out;
+}
+
+[data-bs-theme="dark"] .policy-xml-editor.xml-insert-highlight::-moz-selection {
+  background: #20c997 !important;
+  color: #000 !important;
+  animation: highlight-pulse 1.5s ease-in-out;
+}
+
+@keyframes highlight-pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+/* Fix syntax highlighter text shadows in dark mode */
+[data-bs-theme="dark"] .xml-viewer,
+[data-bs-theme="dark"] .xml-viewer * {
+  text-shadow: none !important;
+}
+
+[data-bs-theme="dark"] .xml-viewer code,
+[data-bs-theme="dark"] .xml-viewer pre {
+  text-shadow: none !important;
+  background: transparent !important;
+}
+
+/* Ensure clean text rendering */
+.xml-viewer {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }

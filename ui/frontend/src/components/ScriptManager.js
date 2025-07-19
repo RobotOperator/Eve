@@ -237,7 +237,7 @@ const ScriptManager = ({ sessionId, onBack }) => {
           
           <div className="mt-4">
             <h5>Script Contents</h5>
-            <pre className="bg-light p-3 rounded" style={{ fontSize: '0.9em', maxHeight: '400px', overflowY: 'auto' }}>
+            <pre className="script-content p-3 rounded" style={{ fontSize: '0.9em', maxHeight: '400px', overflowY: 'auto' }}>
               {selectedScript.script_contents || 'No script content available'}
             </pre>
           </div>

@@ -3,12 +3,111 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { prism } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import apiClient from '../utils/apiClient';
 
+// Collapsible JSON Tree Component
+const JsonNode = ({ name, value, depth = 0, isLast = true }) => {
+  const [isExpanded, setIsExpanded] = useState(depth < 2); // Auto-expand first 2 levels
+  
+  const getValueType = (val) => {
+    if (val === null) return 'null';
+    if (Array.isArray(val)) return 'array';
+    return typeof val;
+  };
+  
+  const valueType = getValueType(value);
+  const isExpandable = valueType === 'object' || valueType === 'array';
+  const isArray = valueType === 'array';
+  
+  const renderValue = (val) => {
+    switch (getValueType(val)) {
+      case 'string':
+        return <span className="text-success">"{val}"</span>;
+      case 'number':
+        return <span className="text-info">{val}</span>;
+      case 'boolean':
+        return <span className="text-warning">{val.toString()}</span>;
+      case 'null':
+        return <span className="text-muted">null</span>;
+      default:
+        return val;
+    }
+  };
+  
+  const getObjectLength = (obj) => {
+    if (Array.isArray(obj)) return obj.length;
+    if (obj && typeof obj === 'object') return Object.keys(obj).length;
+    return 0;
+  };
+  
+  const indentSize = 20; // pixels per level
+  const indentStyle = { paddingLeft: `${depth * indentSize}px` };
+  
+  if (!isExpandable) {
+    return (
+      <div style={{ fontFamily: 'monospace', fontSize: '0.875rem', ...indentStyle }}>
+        {name && <span className="text-primary">"{name}"</span>}
+        {name && ': '}
+        {renderValue(value)}
+        {!isLast && ','}
+      </div>
+    );
+  }
+  
+  const length = getObjectLength(value);
+  const entries = isArray ? 
+    value.map((item, index) => [`[${index}]`, item]) :
+    Object.entries(value || {});
+  
+  return (
+    <div style={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>
+      <div 
+        style={{ cursor: 'pointer', ...indentStyle }}
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="d-flex align-items-center"
+      >
+        <span style={{ width: '16px', color: '#6c757d', marginRight: '4px' }}>
+          {isExpanded ? '▼' : '▶'}
+        </span>
+        {name && <span className="text-primary">"{name}"</span>}
+        {name && ': '}
+        <span className="text-muted">
+          {isArray ? '[' : '{'}
+          {!isExpanded && (
+            <>
+              <span className="text-secondary"> {length} item{length !== 1 ? 's' : ''} </span>
+              {isArray ? ']' : '}'}
+            </>
+          )}
+        </span>
+      </div>
+      
+      {isExpanded && (
+        <div>
+          {entries.map(([key, val], index) => (
+            <JsonNode
+              key={key}
+              name={isArray ? null : key}
+              value={val}
+              depth={depth + 1}
+              isLast={index === entries.length - 1}
+            />
+          ))}
+          <div style={{ fontFamily: 'monospace', fontSize: '0.875rem', ...indentStyle }}>
+            {isArray ? ']' : '}'}
+            {!isLast && ','}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const ComputerManager = ({ sessionId, onBack }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [computers, setComputers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedComputer, setSelectedComputer] = useState(null);
   const [viewMode, setViewMode] = useState('details'); // 'details' or 'json'
+  const [jsonViewMode, setJsonViewMode] = useState('tree'); // 'tree' or 'raw'
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -78,6 +177,20 @@ const ComputerManager = ({ sessionId, onBack }) => {
         <div className="card-header d-flex justify-content-between align-items-center">
           <h3 className="mb-0">Computer JSON - {selectedComputer.general?.name}</h3>
           <div>
+            <div className="btn-group me-2">
+              <button 
+                className={`btn btn-sm ${jsonViewMode === 'tree' ? 'btn-primary' : 'btn-outline-primary'}`}
+                onClick={() => setJsonViewMode('tree')}
+              >
+                Tree View
+              </button>
+              <button 
+                className={`btn btn-sm ${jsonViewMode === 'raw' ? 'btn-primary' : 'btn-outline-primary'}`}
+                onClick={() => setJsonViewMode('raw')}
+              >
+                Raw JSON
+              </button>
+            </div>
             <button className="btn btn-primary me-2" onClick={() => setViewMode('details')}>
               View Details
             </button>
@@ -93,32 +206,48 @@ const ComputerManager = ({ sessionId, onBack }) => {
           </div>
         </div>
         <div className="card-body">
-          <SyntaxHighlighter
-            language="json"
-            style={prism}
-            className="json-viewer"
-            customStyle={{
-              maxHeight: '70vh',
-              fontSize: '0.875rem',
-              lineHeight: '1.4',
-              borderRadius: '0.375rem',
-              backgroundColor: '#ffffff',
-              border: '1px solid #dee2e6',
-              padding: '1rem',
-              margin: 0
-            }}
-            showLineNumbers={true}
-            lineNumberStyle={{
-              color: '#6c757d',
-              backgroundColor: '#f8f9fa',
-              paddingRight: '1rem',
-              textAlign: 'right',
-              borderRight: '1px solid #dee2e6',
-              marginRight: '1rem'
-            }}
-          >
-            {formatJson(selectedComputer)}
-          </SyntaxHighlighter>
+          {jsonViewMode === 'tree' ? (
+            <div 
+              className="json-tree-viewer"
+              style={{
+                maxHeight: '70vh',
+                overflowY: 'auto',
+                backgroundColor: '#ffffff',
+                border: '1px solid #dee2e6',
+                borderRadius: '0.375rem',
+                padding: '1rem'
+              }}
+            >
+              <JsonNode name={null} value={selectedComputer} />
+            </div>
+          ) : (
+            <SyntaxHighlighter
+              language="json"
+              style={prism}
+              className="json-viewer"
+              customStyle={{
+                maxHeight: '70vh',
+                fontSize: '0.875rem',
+                lineHeight: '1.4',
+                borderRadius: '0.375rem',
+                backgroundColor: '#ffffff',
+                border: '1px solid #dee2e6',
+                padding: '1rem',
+                margin: 0
+              }}
+              showLineNumbers={true}
+              lineNumberStyle={{
+                color: '#6c757d',
+                backgroundColor: '#f8f9fa',
+                paddingRight: '1rem',
+                textAlign: 'right',
+                borderRight: '1px solid #dee2e6',
+                marginRight: '1rem'
+              }}
+            >
+              {formatJson(selectedComputer)}
+            </SyntaxHighlighter>
+          )}
         </div>
       </div>
     );
