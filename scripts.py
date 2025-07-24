@@ -51,11 +51,11 @@ def delete_script_by_id(base_url, bearer_token, id):
     response.raise_for_status()
     return "+OK+"
 
-#Creates a new policy as defined in policy_template.xml
+#Creates a new script as defined in script_path
 def create_script(base_url, bearer_token, script_name, script_path):
     #Check script path
     if not os.path.exists(script_path) or not os.path.isfile(script_path):
-        raise Exception(f"X - {script_path} not found or is not file. - X")
+        raise Exception(f"X - {script_path} not found or is not a file. - X")
 
     #Base64 encode supplied script content
     with open(script_path, 'rb') as f:
@@ -120,9 +120,6 @@ def update_script_by_id(base_url, bearer_token, id, script_path):
         "Accept": "application/xml"
     }
         
-#    with open("policy_template.xml", "rb") as file:
-#        data = file.read()
-
     # Disable SSL verification and execute request  
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     response = requests.put(url, headers=headers, data=data, verify=False)

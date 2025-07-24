@@ -235,8 +235,6 @@ def main():
     parser.add_argument('--get_api_clients', action="store_true", help="Retrieves API clients in the JAMF tenant.")
     parser.add_argument('--get_role_by_id', type=str, help="Retrieves details of an API role specified by id.")
     parser.add_argument('--get_client_by_id', type=str, help="Retrieves the details of a client specified by id.")
-    parser.add_argument('--get_computer_extension_attributes', action="store_true", help="Retrieves all computer extension attributes.")
-    parser.add_argument('--get_computer_extension_attribute_by_id', type=str, help="Retrieves an individual computer extension attributes details.")
     parser.add_argument('--create_api_role', action="store_true", help="Creates a new api role with assigned privileges based on supplied input JSON file.")
     parser.add_argument('--input_file', type=str, help="File path for input.")
     parser.add_argument('--update_api_role_by_id', type=str, help="Updates an existing api role based on supplied input JSON file.")
@@ -278,10 +276,6 @@ def main():
         print(json.dumps(get_role_by_id(jamf_sstring, bearer_token, args.get_role_by_id), indent=2))
     elif args.get_client_by_id:
         print(json.dumps(get_client_by_id(jamf_sstring, bearer_token, args.get_client_by_id), indent=2))
-    elif args.get_computer_extension_attributes:
-        print(json.dumps(get_computer_extension_attributes(jamf_sstring, bearer_token), indent=2))
-    elif args.get_computer_extension_attribute_by_id:
-        print(json.dumps(get_computer_extension_attribute_by_id(jamf_sstring, bearer_token, args.get_computer_extension_attribute_by_id), indent=2))
     elif args.create_api_role:  
         if args.input_file:
             print(create_api_role(jamf_sstring, bearer_token, args.input_file))
