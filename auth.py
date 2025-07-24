@@ -3,6 +3,7 @@ import subprocess
 import argparse
 import base64, json, os
 from datetime import datetime, UTC, timedelta
+from dateutil import parser
 import requests
 import urllib3
         
@@ -44,6 +45,8 @@ def auth_token(server, args):
         result = get_auth_token(server, auth_token)
         result_json = json.loads(result)
         result_json["server"] = server
+        time_val = parser.parse(result_json.get('expires'))
+        result_json["expires"] = time_val.strftime("%Y-%m-%dT%H:%M:%SZ")
         result = json.dumps(result_json)
         return result
     elif args.basic_auth:
