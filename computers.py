@@ -7,7 +7,7 @@ import requests
 from auth import auth_token, create_server_string
 
 #web request
-def get_computers(base_url, bearer_token, search_string):
+def get_computers(base_url, bearer_token, search_string="*"):
     updated_string = '*' + search_string + '*'
     url = f"{base_url}/JSSResource/computers/match/{updated_string}"
     headers = {
@@ -174,6 +174,7 @@ def main():
     parser.add_argument('--basic_auth', type=str, help="The base64 basic auth token for authentication.")
     parser.add_argument('--bearer_token', type=str, help="A bearer token to use for authentication.")
     parser.add_argument('--jamf_server', type=str, help="The URL of the target JAMF server.")
+    parser.add_argument('--get_computers', action="store_true", help="Retrieves all computers in the JAMF tenant.")
     parser.add_argument('--search_for_computer_by_string', type=str, help="Uses a supplied string to find macs that have attributes such as name or user which match the value.")
     parser.add_argument('--api_port', type=str, help="The port of the JAMF server API to communicate with.")
     parser.add_argument('--get_computer_by_udid', type=str, help="Retrieves the full details of a macOS device specified by the device UDID.")
@@ -182,7 +183,7 @@ def main():
     parser.add_argument('--get_computer_extension_attributes', action="store_true", help="Retrieves all computer extension attributes.")
     parser.add_argument('--get_computer_extension_attribute_by_id', type=str, help="Retrieves an individual computer extension attributes details.")
     parser.add_argument('--create_computer_extension_attribute', action="store_true", help="Creates a new computer extension attribute based on supplied input XML file.")
-    parser.add_argument('--input_file', type=str, help="File path for input to create_policy or update_policy_by_id")
+    parser.add_argument('--input_file', type=str, help="File path for input to create_computer_extension attributes or update_computer_extension_attribute_by_id")
     parser.add_argument('--update_computer_extension_attribute_by_id', type=str, help="Updates an existing computer extension attribute based on supplied input XML file.")
     parser.add_argument('--delete_computer_extension_attribute_by_id', type=str, help="Deletes an existing computer extension attribute using the ID.")
     args = parser.parse_args()
@@ -212,6 +213,8 @@ def main():
     #Perform action based on supplied argument
     if args.search_for_computer_by_string:
         print(json.dumps(get_computers(jamf_sstring, bearer_token, args.search_for_computer_by_string), indent=2))
+    elif args.get_computers:
+        print(json.dumps(get_computers(jamf_sstring, bearer_token), indent=2))
     elif args.get_computer_by_udid:
         print(json.dumps(get_computer_by_udid(jamf_sstring, bearer_token, args.get_computer_by_udid), indent=2))
     elif args.get_computer_by_id:
