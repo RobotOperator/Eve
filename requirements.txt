@@ -1,0 +1,29 @@
+# Core Python HTTP and API libraries
+requests>=2.31.0
+urllib3>=1.26.0
+
+# Flask web framework and extensions
+Flask>=2.3.0
+Flask-CORS>=4.0.0
+
+# Date/time handling (built-in datetime is used, but pytz might be useful)
+pytz>=2023.3
+
+# JSON handling (built-in json is used)
+# Base64 encoding (built-in base64 is used)
+# OS operations (built-in os is used)
+# Subprocess handling (built-in subprocess is used)
+# Argument parsing (built-in argparse is used)
+
+# Development and testing dependencies (optional)
+pytest>=7.0.0
+pytest-flask>=1.2.0
+
+# Security and SSL handling
+certifi>=2023.0.0
+
+# Optional: For better JSON pretty printing and manipulation
+pprint
+
+# Optional: For environment variable management
+python-dotenv>=1.0.0

@@ -1,6 +1,6 @@
 <policy>
     <general>   
-        <name>Execcute Policy</name> <!-- Custom Policy Name -->
+        <name>Execute Policy</name> <!-- Custom Policy Name -->
         <enabled>true</enabled>
         <target_drive>/</target_drive>
         <trigger>EVENT</trigger>  <!-- Recurring Check-in trigger -->
