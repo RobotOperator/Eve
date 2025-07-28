@@ -4,13 +4,14 @@
 </p>
 
 ## Overview
-Eve is a JAMF exploitation toolkit used to interact with either cloud hosted JAMF tenants or locally hosted JAMF servers using various API calls. To use this toolkit credentials for an account registered with the JAMF instance that has API access will be required. This tooling automates attacks that my team and I have performed successfully to exploit JAMF access to enumerate Apple devices as well as execute code in varying contexts to laterally move to different systems. The intended user for this toolkit should already have some awareness about JAMF API permissions to know how to best leverage their access. For those trying to discover what can be done I recommend starting <a href="https://developer.jamf.com/jamf-pro/docs/classic-api-minimum-required-privileges-and-endpoint-mapping">here</a>.
+Eve is a Jamf exploitation toolkit used to interact with either cloud hosted Jamf tenants or locally hosted Jamf servers using various API calls. To use this toolkit credentials for an account registered with the Jamf instance that has API access will be required. This tooling automates attacks that my team and I have performed successfully to exploit Jamf access to enumerate Apple devices, escalate privileges, as well as execute code to laterally move to different systems. The intended user for this toolkit should already have some awareness about Jamf API permissions to know how to best leverage their access. For those trying to discover what can be done I recommend starting <a href="https://developer.jamf.com/jamf-pro/docs/classic-api-minimum-required-privileges-and-endpoint-mapping">here</a>.
 
 ## Requirements
-1. Python3
-2. A unix system capable of executing the embedded scripts with curl (for CLI tools)
-3. <a href="https://github.com/rofl0r/proxychains-ng">proxychains</a> (optional, for CLI tools)
-4. <a href="https://jqlang.org">jq</a> for parsing JSON output (for CLI tools)
+1. Python 3.12 or newer
+2. requests Python Module
+3. dateutil Python Module
+4. flask Python Module
+5. flask_cors Python Module 
 
 ## Setup
 ### Web UI Setup (Recommended)
