@@ -4,7 +4,7 @@
 </p>
 
 ## Overview
-Eve is a Jamf exploitation toolkit used to interact with either cloud hosted Jamf tenants or locally hosted Jamf servers using various API calls. To use this toolkit credentials for an account registered with the Jamf instance that has API access will be required. This tooling automates attacks that my team and I have performed successfully to exploit Jamf access to enumerate Apple devices, escalate privileges, as well as execute code to laterally move to different systems. The intended user for this toolkit should already have some awareness about Jamf API permissions to know how to best leverage their access. For those trying to discover what can be done I recommend starting <a href="https://developer.jamf.com/jamf-pro/docs/classic-api-minimum-required-privileges-and-endpoint-mapping">here</a>.
+Eve is a Jamf exploitation toolkit used to interact with either cloud hosted Jamf Pro tenants or locally hosted Jamf Pro servers using API calls. To use this toolkit credentials for an account registered with the Jamf instance that has API access will be required. This tooling automates attacks that my team and I have performed successfully to exploit Jamf access to enumerate Apple devices, escalate privileges, as well as execute code in varying contexts to laterally move to different systems. The intended user for this toolkit should already have some awareness about Jamf API permissions to know how to best leverage their access. For those trying to discover what can be done I recommend starting <a href="https://developer.jamf.com/jamf-pro/docs/classic-api-minimum-required-privileges-and-endpoint-mapping">here</a>.
 
 ## Requirements
 1. Python 3.12 or newer
@@ -14,7 +14,7 @@ Eve is a Jamf exploitation toolkit used to interact with either cloud hosted Jam
 5. flask_cors Python Module 
 
 ## Setup
-### Web UI Setup (Recommended)
+### Web UI Setup
 ```bash
 # Clone the repository
 git clone https://github.com/RobotOperator/Eve.git
@@ -39,7 +39,22 @@ proxychains python3 eve_ui.py
 # http://localhost:8003
 ```
 
-### Development Setup (for frontend modifications)
+### CLI Setup
+```bash
+# Clone Repo
+git clone https://github.com/RobotOperator/Eve.git
+cd Eve
+
+# Get initial token using username and password, api client id and secret, basic authentication string, or an already obtained Bearer token
+# API port is usually either 443 for cloud or 8443 for local instances
+# Bearer token and server string will be stored locally and used if not expired
+python3 auth.py --username JamfUser --password $(jpass) --tenant https://tenant.jamfcloud.com --token_details
+python3 auth.py --api_client_id "f273dfb9-XXXX-XXXX" --api_client_secret u2... --tenant https://jamf.local --api_port 8443
+python3 auth.py --basic_auth ua... --tenant https://tenant.jamfcloud.com
+python3 auth.py --bearer_token ey... --tenant https://tenant.jamfcloud.com
+```
+
+### Development Setup
 If you want to modify the frontend, you'll need Node.js and npm:
 ```bash
 cd ui/frontend
@@ -48,21 +63,9 @@ npm install
 npm run build
 ```
 
-### CLI Setup
-```bash
-# Setup /etc/proxychains.conf to use proxied system or alias proxychains command to a benign action
-
-git clone https://github.com/RobotOperator/Eve.git
-cd Eve
-
-# Get initial token using API username and password, basic authentication string, or an already obtained Bearer token
-# API port is usually either 443 or 8443 for local instances
-python3 token_ApplePy.py --username api_admin --password 'my_pass123!@#' --jamf_server https://test.jamfcloud.com --api_port 443
-```
-
 ## Usage
 
-### Web UI (Recommended)
+### Web UI
 1. Start the Flask server: `python3 eve_ui.py`
 2. Open your browser to `http://localhost:8003`
 3. Authenticate using either:
@@ -76,7 +79,7 @@ python3 token_ApplePy.py --username api_admin --password 'my_pass123!@#' --jamf_
    - Manage scripts
    - View API roles and clients
 
-### Features
+### Web UI Features
 - **Modern Web UI**: Clean, responsive interface with dark mode support
 - **Policy Editor**: Advanced XML editor with syntax highlighting, auto-completion, and helper pane
 - **Extension Attributes**: Create and manage computer extension attributes with templates
@@ -126,8 +129,6 @@ python3 policy_Applepy.py --bearer_token 'eyxxxx' --jamf_server https://test.jam
 ./update_privileges.sh <JAMFURL:PORT> <Bearer Token> <Account ID>
 ./update_privileges.sh https://test.jamfcloud.com 'eyxxxx' 285
 ```
-
-## Planned Work
 
 ## Contributors
 <a href="https://github.com/MayerDaniel">Daniel Mayer</a>
