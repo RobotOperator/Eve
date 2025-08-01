@@ -64,6 +64,7 @@ npm run build
 ```
 
 ## Usage
+Eve includes some pre-defined XML and JSON templates for interaction with Jamf Pro APIs in the "templates" directory. These can be modified and provided to command-line input_file arguments or loaded automatically in the Eve UI. 
 
 ### Web UI
 1. Start the Flask server: `python3 eve_ui.py`
@@ -87,47 +88,92 @@ npm run build
 - **Multi-Auth Support**: Both OAuth2 and username/password authentication
 
 ###  CLI Tools
-### Enumerating Computers
+Any of the CLI commands will show elligible parameters and usage with the scripts by running --help.
 ```
-#Searching for computers with ADM_ the same as a simple search in the GUI
-python3 search_ApplePy.py --jamf_server https://test.jamfcloud.com --api_port 443 --search_string "ADM_"
+python3 <script_name.py> --help
+```
 
-#Get computer details with UDID
-./computer_details_by_id.sh <JAMFURL:PORT> <Bearer Token> <Computer ID>
-./computer_details_by_id.sh https://test.jamfcloud.com:443 'eyxxx' 1029
+### Auth.py
 ```
-### Scripts
+# Used for authenticating and storing a bearer token/Jamf server details using username/password, basic auth string, existing bearer token, or API credentials
+# token_details can show permissions included with obtained token following authentication
+# Once first authentication has occurred, jamf_server can be omitted unless a different server URL needs to be specified
+python3 auth.py --username auditor --password "auditor_Pass" --jamf_server https://tenant.local --api_port 8443
+python3 auth.py --basic_auth "UX...." --jamf_server https://tenant.jamfcloud.com
+python3 auth.py --api_client_id f273dfb9 --api_client_secret=-UX... #Use = after parameter if there is a dash in any value
+python3 auth.py --bearer_token ey... --jamf_server https://tenant.jamfcloud.com --token_details
 ```
-#Get script contents by script id
-./get_script_contents.sh <JAMFURL:PORT> <Bearer Token> <Script ID>
-./get_script_contents.sh https://test.jamfcloud.com:443 'eyxxx' 29
-
-#Push new script to the JAMF server, requires the source script to have quotes escaped/prepped. Highly recommend base64 encoding scripts and decoding the content to be executed
-./push_script.sh <JAMFURL:PORT> <Bearer Token> <Path to Script> <New Script Name>
-./push_script.sh https://test.jamfcloud.com:443 'eyxxx' ~/Eve/script6.txt 'Updated_System_Check'
-
-#Delete scripts by id
-./delete_script_by_id.sh <JAMFURL:PORT> <Bearer Token> <Script ID>
-./push_script.sh https://test.jamfcloud.com:443 'eyxxx' 29
+### Computers.py
 ```
-### Policies
+# Used for searching for computer details, pulling computer policy logs, and creating/updating/deleting/reading computer extension attributes
+# Requires bearer token with Read Computers JSSObject permission and/or Create/Read/Update/Delete Computer Extension Attributes JSSObject permissions
+# Authentication details are optional/shown in first example below
+python3 computers.py --get_computers [--username --password --jamf_server]
+python3 computers.py --search_for_computer_by_string "JVM"
+python3 computers.py --get_computer_by_id 3
+python3 computers.py --get_policy_logs_by_udid <Computer UDID>
+python3 computers.py --get_computer_extension_attributes
+python3 computers.py --get_computer_extension_attribute_by_id 2
+python3 computers.py --create_computer_extension_attribute --input_file ./my_extension_template.xml
+python3 computers.py --update_computer_extension_attribute_by_id 3 --input_file ./my_extension_template.xml
+python3 computers.py --delete_computer_extension_attribute_by_id 3
 ```
-#Delete policy by id
-python3 policy_Applepy.py --bearer_token 'eyxxxx' --jamf_server https://test.jamfcloud.com --action delete --policy_id 493 --api_port 443
-
-#Push new policy to execute scripts on target computers specified by ids, update computer ids embedded within the zsh script for now
-./push_policy.zsh <JAMFURL:PORT> <Bearer Token> <Script ID to Execute> <New Policy Name>
-./push_policy.zsh https://test.jamfcloud.com 'eyxxxx' 29 'New_Compliance_Policy'
-
-#Retrive policy logs for a specific computer by supplying the UDID
-./policy_logs_by_udid.sh <JAMFURL:PORT> <Bearer Token> <Computer UDID>
-./policy_logs_by_udid.sh https://test.jamfcloud.com 'eyxxxx' AB5XDXXXX
+### Accounts.py
 ```
-### Privileges
+# Used for interacting with Jamf Pro accounts and groups, create/read/update/delete
+# Requires bearer token with Create/Read/Update/Delete Accounts and/or Create/Read/Update/Delete Groups JSSObject permissions
+# 'Update Accounts' allows resetting other account passwords and updating their permissions
+# Authentication parameters are available as shown previously
+python3 accounts.py --get_accounts
+python3 accounts.py --get_account_by_id 21
+python3 accounts.py --create_account --input_file ./my_path_to_account.xml
+python3 accounts.py --update_account_by_id 21 --input_file ./my_path_to_account.xml
+python3 accounts.py --delete_account_by_id 21
+python3 accounts.py --get_groups
+python3 accounts.py --get_group_by_id 1
+python3 accounts.py --create_group --input_file ./my_path_to_group.xml
+python3 accounts.py --update_group_by_id 1 --input_file ./my_path_to_group.xml
+python3 accounts.py --delete_group_by_id 1
 ```
-#Update privileges of a target account id, admin.xml serves as a template for granting admin privileges and is statically specified in script
-./update_privileges.sh <JAMFURL:PORT> <Bearer Token> <Account ID>
-./update_privileges.sh https://test.jamfcloud.com 'eyxxxx' 285
+### Api.py
+```
+# Used for interacting with API roles and clients, create/read/update/delete and retrieving client credentials
+# Requires bearer token with Create/Read/Update/Delete API Integrations and/or Create/Read/Update/Delete API Roles JSSObject permissions
+# 'Create API Integrations' permission required to get API Client/Integration credentials
+# Authentication parameters are available as shown previously
+python3 api.py --get_api_roles
+python3 api.py --get_api_clients
+python3 api.py --get_role_by_id 2
+python3 api.py --get_client_by_id 3
+python3 api.py --create_api_role --input_file ./path_to_my_role.json
+python3 api.py --update_api_role_by_id 2 --input_file ./path_to_my_role.json
+python3 api.py --delete_api_role_by_id 3
+python3 api.py --create_api_client --input_file ./path_to_my_client.json
+python3 api.py --update_api_client_by_id 3 --input_file ./path_to_my_client.json
+python3 api.py --delete_api_client_by_id 3
+python3 api.py --get_client_credentials 3
+```
+### Scripts.py
+```
+# Used for interacting with scripts stored on the Jamf Pro server to be executed by policies, create/read/update/delete
+# Requires bearer token with Create/Read/Update/Delete Scripts JSSObject permissions
+# Authentication parameters are available as shown previously
+python3 scripts.py --get_scripts
+python3 scripts.py --get_script_by_id 3
+python3 scripts.py --create_script My_Script --input_file ./path_to_my_script.sh
+python3 scripts.py --update_script_by_id 3 --input_file ./path_to_my_script.sh
+python3 scripts.py --delete_script_by_id 3
+```
+### Policies.py
+```
+# Used for interacting with policies to execute commands or scripts on managed macOS devices, create/read/update/delete
+# Requires bearer token with Create/Read/Update/Delete Policies JSSObject permissions
+# Authentication parameters are available as shown previously
+python3 policies.py --get_policies
+python3 policies.py --get_policy_by_id 27
+python3 policies.py --create_policy --input_file ./path_to_my_policy.xml
+python3 policies.py --update_policy_by_id 27 --input_file ./path_to_my_policy.xml
+python3 policies.py --delete_policy_by_id 27
 ```
 
 ## Contributors
