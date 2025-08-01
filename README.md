@@ -9,9 +9,13 @@ Eve is a Jamf exploitation toolkit used to interact with either cloud hosted Jam
 ## Requirements
 1. Python 3.12 or newer
 2. requests Python Module
-3. dateutil Python Module
-4. flask Python Module
-5. flask_cors Python Module 
+3. urllib Python Module
+4. dateutil Python Module
+5. flask Python Module
+6. flask_cors Python Module
+7. pytz Python Module
+8. certifi Python Module
+9. pprint Python Module
 
 ## Setup
 ### Web UI Setup
