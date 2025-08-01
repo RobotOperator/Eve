@@ -63,7 +63,7 @@ def auth_token(server, args):
         result_json["expires"] = expiry.strftime("%Y-%m-%dT%H:%M:%SZ")
         result_json["token"] = jresponse.get("access_token")
         result_json["server"] = server
-        print(f"Expires in {jresponse.get("expires_in")} seconds.")
+        print(f"Expires in {jresponse.get('expires_in')} seconds.")
         result = json.dumps(result_json)
         return result
     elif os.path.exists('./.data/token'):

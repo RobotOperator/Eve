@@ -51,7 +51,7 @@ def delete_policy_by_id(base_url, bearer_token, id):
     response.raise_for_status()
     return "+OK+"
 
-#Creates a new policy as defined in policy_template.xml
+#Creates a new policy as defined in XML input file
 def create_policy(base_url, bearer_token, input_file):
     
     if not os.path.exists(input_file) or not os.path.isfile(input_file):
@@ -77,7 +77,7 @@ def create_policy(base_url, bearer_token, input_file):
         print(e)
         return response.text
 
-# Update an existing policy by id using the policy template xml
+# Update an existing policy by id using the input file
 def update_policy_by_id(base_url, bearer_token, id, input_file):
     
     if not os.path.exists(input_file) or not os.path.isfile(input_file):
@@ -156,13 +156,11 @@ def main():
             print(create_policy(jamf_sstring, bearer_token, args.input_file))
         else:
             raise Exception("X - Missing args: input file is required - X")
-#        print(create_policy(jamf_sstring, bearer_token))
     elif args.update_policy_by_id:
         if args.input_file:
             print(update_policy_by_id(jamf_sstring, bearer_token, args.update_policy_by_id, args.input_file))
         else:
             raise Exception("X - Missing args: input file is required - X")
-#        print(update_policy_by_id(jamf_sstring, bearer_token, args.update_policy_by_id))
     else:
         raise Exception("X - Missing args - X")
 
