@@ -50,7 +50,7 @@ def auth_token(server, args):
         result = json.dumps(result_json)
         return result
     elif args.basic_auth:
-        result = get_auth_token(server, auth_token)
+        result = get_auth_token(server, args.basic_auth)
         result_json = json.loads(result)
         result_json["server"] = server
         result = json.dumps(result_json)
