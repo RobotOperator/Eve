@@ -52,10 +52,10 @@ cd Eve
 # Get initial token using username and password, api client id and secret, basic authentication string, or an already obtained Bearer token
 # API port is usually either 443 for cloud or 8443 for local instances
 # Bearer token and server string will be stored locally and used if not expired
-python3 auth.py --username JamfUser --password $(jpass) --tenant https://tenant.jamfcloud.com --token_details
-python3 auth.py --api_client_id "f273dfb9-XXXX-XXXX" --api_client_secret u2... --tenant https://jamf.local --api_port 8443
-python3 auth.py --basic_auth ua... --tenant https://tenant.jamfcloud.com
-python3 auth.py --bearer_token ey... --tenant https://tenant.jamfcloud.com
+python3 auth.py --username JamfUser --password $(jpass) --jamf_server https://tenant.jamfcloud.com --token_details
+python3 auth.py --api_client_id "f273dfb9-XXXX-XXXX" --api_client_secret u2... --jamf_server https://jamf.local --api_port 8443
+python3 auth.py --basic_auth ua... --jamf_server https://tenant.jamfcloud.com
+python3 auth.py --bearer_token ey... --jamf_server https://tenant.jamfcloud.com
 ```
 
 ### Development Setup
