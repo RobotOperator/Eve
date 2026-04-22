@@ -84,6 +84,8 @@ def auth_token(server, args):
         result = get_auth_token(server, args.basic_auth)
         result_json = json.loads(result)
         result_json["server"] = server
+        time_val = parser.parse(result_json.get('expires'))
+        result_json["expires"] = time_val.strftime("%Y-%m-%dT%H:%M:%SZ")
         result = json.dumps(result_json)
         return result 
     elif hasattr(args, 'api_client_id') and hasattr(args, 'api_client_secret'):
