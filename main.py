@@ -2,6 +2,8 @@
 import importlib
 import json
 import os
+import secrets
+import string
 import subprocess
 import sys
 import time
@@ -9,6 +11,7 @@ import webbrowser
 from datetime import datetime, timezone
 from getpass import getpass
 from types import SimpleNamespace
+from xml.etree import ElementTree as ET
 
 
 DEPENDENCIES = [
@@ -26,6 +29,8 @@ MODULE_NAMES = (
     "scripts",
     "sso",
 )
+
+TEMPLATES_DIR = os.path.join(os.getcwd(), "templates")
 
 
 def check_dependencies():
@@ -97,6 +102,10 @@ def prompt_optional_text(label):
     return input(f"{label}: ").strip()
 
 
+def prompt_optional_secret(label):
+    return getpass(f"{label}: ").strip()
+
+
 def prompt_file_path(label):
     value = prompt_text(label)
     return os.path.abspath(os.path.expanduser(value))
@@ -115,6 +124,53 @@ def print_result(output):
         print(json.dumps(output, indent=2))
     else:
         print(output)
+
+
+def template_file_path(filename):
+    return os.path.join(TEMPLATES_DIR, filename)
+
+
+def make_temp_path(prefix, suffix):
+    ensure_data_dir()
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    token = secrets.token_hex(4)
+    return os.path.join(".data", f"{prefix}_{stamp}_{token}{suffix}")
+
+
+def read_json_file(path):
+    with open(path, "r") as handle:
+        return json.load(handle)
+
+
+def write_json_file(path, data):
+    with open(path, "w") as handle:
+        json.dump(data, handle, indent=2)
+
+
+def load_xml_root(path):
+    return ET.parse(path).getroot()
+
+
+def write_xml_root(path, root):
+    tree = ET.ElementTree(root)
+    tree.write(path, encoding="utf-8", xml_declaration=True)
+
+
+def set_xml_text(root, xpath, value):
+    element = root.find(xpath)
+    if element is None:
+        raise Exception(f"X - Required XML element {xpath} was not found in template. - X")
+    element.text = value
+
+
+def random_suffix(length=6):
+    alphabet = string.ascii_lowercase + string.digits
+    return "".join(secrets.choice(alphabet) for _ in range(length))
+
+
+def random_password(length=18):
+    alphabet = string.ascii_letters + string.digits + "!@#$%^*"
+    return "".join(secrets.choice(alphabet) for _ in range(length))
 
 
 def get_parser_module():
@@ -201,6 +257,14 @@ def show_token_details(modules, state):
         print(modules["auth"].get_token_details(state["server"], state["token"]))
     except Exception as exc:
         print(exc)
+
+
+def fetch_token_details(modules, state):
+    try:
+        return modules["auth"].get_token_details(state["server"], state["token"])
+    except Exception as exc:
+        print(exc)
+        return None
 
 
 def complete_authentication(modules, state, args, show_details):
@@ -328,7 +392,7 @@ def ensure_authenticated(modules, state):
     cached = load_cached_session()
     if cached:
         state.update(cached)
-        print("[i] - Loaded cached token from ./.data/token. -[i]")
+        print("[i] - Loaded cached token from ./.data/token. - [i]")
         return True
 
     print("X - Authentication is required before running this action. - X")
@@ -779,71 +843,354 @@ def contains_any(text, values):
     return False
 
 
-def build_lazy_actions(modules, state, token_details):
-    actions = []
-    lowered = token_details.lower()
+def collect_strings(value, bucket):
+    if isinstance(value, dict):
+        for item in value.values():
+            collect_strings(item, bucket)
+    elif isinstance(value, list):
+        for item in value:
+            collect_strings(item, bucket)
+    elif isinstance(value, str):
+        bucket.add(value)
 
-    if contains_any(lowered, ("account", "group")):
-        actions.append(("List Accounts", modules["accounts"].get_accounts, ()))
-        actions.append(("List Groups", modules["accounts"].get_groups, ()))
 
-    if contains_any(lowered, ("api role", "api roles", "api client", "api clients", "api integration")):
-        actions.append(("List API Roles", modules["api"].get_api_roles, ()))
-        actions.append(("List API Clients", modules["api"].get_api_clients, ()))
+def extract_permissions(token_details):
+    try:
+        details = json.loads(token_details)
+    except Exception:
+        return set()
 
-    if contains_any(lowered, ("computer", "computers")):
-        actions.append(("List Computers", modules["computers"].get_computers, ()))
+    values = set()
+    collect_strings(details, values)
+    return values
 
-    if contains_any(lowered, ("extension attribute", "extension attributes")):
-        actions.append(
-            (
-                "List Computer Extension Attributes",
-                modules["computers"].get_computer_extension_attributes,
-                (),
-            )
+
+def lazy_authenticate(modules, state):
+    print("Oh great you're lazy... let me try and help.")
+    # TODO: Add logic branch to check if authenticated already
+    ensure_authenticated(modules, state)
+    '''print("I know you are lazy, but I need some type of auth. material")
+
+    choice = prompt_choice(
+        "Select authentication material:",
+        [
+            "Username + Password",
+            "Basic Auth",
+            "Bearer Token",
+            "Back",
+        ],
+    )
+
+    if choice == 4:
+        return None
+
+    jamf_server, api_port = prompt_server_args()
+    auth_module = modules["auth"]
+
+    try:
+        server = auth_module.create_server_string(
+            build_auth_args(jamf_server=jamf_server, api_port=api_port)
         )
+    except Exception as exc:
+        print(exc)
+        print("X - Credential material invalid or authentication failed. Returning to main menu. - X")
+        return None
 
-    if contains_any(lowered, ("policy", "policies")):
-        actions.append(("List Policies", modules["policies"].get_policies, ()))
+    try:
+        if choice == 1:
+            username = prompt_optional_text("Username")
+            password = prompt_optional_secret("Password")
+            if not username or not password:
+                print("X - No credential material supplied. Returning to main menu. - X")
+                return None
+            bearer_string = auth_module.auth_token(
+                server,
+                build_auth_args(
+                    username=username,
+                    password=password,
+                    jamf_server=jamf_server,
+                    api_port=api_port,
+                ),
+            )
+            if "token" not in bearer_string:
+                raise Exception(bearer_string)
+            result_json = json.loads(bearer_string)
+            state["server"] = server
+            state["token"] = result_json.get("token")
+            state["auth_method"] = "lazy_username_password"
+            save_cached_session(result_json)
+        elif choice == 2:
+            basic_auth = prompt_optional_secret("Base64 basic authentication string")
+            if not basic_auth:
+                print("X - No credential material supplied. Returning to main menu. - X")
+                return None
+            bearer_string = auth_module.auth_token(
+                server,
+                build_auth_args(
+                    basic_auth=basic_auth,
+                    jamf_server=jamf_server,
+                    api_port=api_port,
+                ),
+            )
+            if "token" not in bearer_string:
+                raise Exception(bearer_string)
+            result_json = json.loads(bearer_string)
+            state["server"] = server
+            state["token"] = result_json.get("token")
+            state["auth_method"] = "lazy_basic_auth"
+            save_cached_session(result_json)
+        else:
+            bearer_token = prompt_optional_secret("Bearer token")
+            if not bearer_token:
+                print("X - No credential material supplied. Returning to main menu. - X")
+                return None
+            state["server"] = server
+            state["token"] = bearer_token
+            state["auth_method"] = "lazy_bearer_token"
+    except Exception as exc:
+        print(exc)
+        print("X - Credential material invalid or authentication failed. Returning to main menu. - X")
+        state.pop("server", None)
+        state.pop("token", None)
+        state.pop("auth_method", None)
+        return None'''
 
-    if contains_any(lowered, ("script", "scripts")):
-        actions.append(("List Scripts", modules["scripts"].get_scripts, ()))
+    token_details = fetch_token_details(modules, state)
+    if not token_details:
+        print("X - Credential material invalid or authentication failed. Returning to main menu. - X")
+        state.pop("server", None)
+        state.pop("token", None)
+        state.pop("auth_method", None)
+        return None
 
-    if "sso" in lowered:
-        actions.append(("Show SSO Config", modules["sso"].get_sso_config, ()))
+    print("Got a bearer token, seeing what you can do...")
+    return token_details
 
-    unique_actions = []
-    seen = set()
-    for label, func, args in actions:
-        if label not in seen:
-            unique_actions.append((label, func, args))
-            seen.add(label)
 
-    return unique_actions
+def lazy_create_admin_account(modules, state):
+    template_path = template_file_path("account_create.xml")
+    root = load_xml_root(template_path)
+    new_name = f"eve_lazy_admin_{random_suffix()}"
+    new_password = random_password()
+
+    set_xml_text(root, "name", new_name)
+    set_xml_text(root, "real_name", new_name.upper())
+    set_xml_text(root, "password", new_password)
+
+    temp_path = make_temp_path("lazy_account_create", ".xml")
+    write_xml_root(temp_path, root)
+
+    result = modules["accounts"].create_account(state["server"], state["token"], temp_path)
+    print(result)
+    print(f"Created administrator account: {new_name}")
+    print(f"Password: {new_password}")
+
+
+def lazy_update_account(modules, state):
+    target_id = prompt_optional_text("Target account ID")
+    if not target_id:
+        print("X - Account ID is required. - X")
+        return
+
+    template_path = template_file_path("account_update.xml")
+    root = load_xml_root(template_path)
+    new_name = f"eve_lazy_update_{random_suffix()}"
+    new_password = random_password()
+
+    set_xml_text(root, "name", new_name)
+    set_xml_text(root, "real_name", new_name.upper())
+    set_xml_text(root, "password", new_password)
+
+    temp_path = make_temp_path("lazy_account_update", ".xml")
+    write_xml_root(temp_path, root)
+
+    result = modules["accounts"].update_account_by_id(
+        state["server"], state["token"], target_id, temp_path
+    )
+    print(result)
+    print(f"Updated account ID {target_id}")
+    print(f"New username: {new_name}")
+    print(f"New password: {new_password}")
+
+
+def lazy_list_accounts(modules, state):
+    print_result(modules["accounts"].get_accounts(state["server"], state["token"]))
+
+
+def lazy_create_extension_attribute(modules, state):
+    template_path = template_file_path("computer_extension_attribute.xml")
+    root = load_xml_root(template_path)
+    new_name = f"Eve Lazy EA {random_suffix()}"
+    set_xml_text(root, "name", new_name)
+
+    temp_path = make_temp_path("lazy_extension_attribute_create", ".xml")
+    write_xml_root(temp_path, root)
+
+    result = modules["computers"].create_computer_extension_attribute(
+        state["server"], state["token"], temp_path
+    )
+    print(result)
+    print(f"Created computer extension attribute: {new_name}")
+
+
+def lazy_update_extension_attribute(modules, state):
+    target_id = prompt_optional_text("Target computer extension attribute ID")
+    if not target_id:
+        print("X - Extension attribute ID is required. - X")
+        return
+
+    template_path = template_file_path("computer_extension_attribute.xml")
+    root = load_xml_root(template_path)
+    new_name = f"Eve Lazy EA Updated {random_suffix()}"
+    set_xml_text(root, "name", new_name)
+
+    temp_path = make_temp_path("lazy_extension_attribute_update", ".xml")
+    write_xml_root(temp_path, root)
+
+    result = modules["computers"].update_computer_extension_by_id(
+        state["server"], state["token"], target_id, temp_path
+    )
+    print(result)
+    print(f"Updated computer extension attribute ID {target_id} with name: {new_name}")
+
+
+def lazy_list_extension_attributes(modules, state):
+    print_result(
+        modules["computers"].get_computer_extension_attributes(state["server"], state["token"])
+    )
+
+
+def lazy_create_policy(modules, state):
+    template_path = template_file_path("policy_template_execute_command.xml")
+    root = load_xml_root(template_path)
+    new_name = f"Eve Lazy Policy {random_suffix()}"
+    set_xml_text(root, "general/name", new_name)
+
+    temp_path = make_temp_path("lazy_policy_create", ".xml")
+    write_xml_root(temp_path, root)
+
+    result = modules["policies"].create_policy(state["server"], state["token"], temp_path)
+    print(result)
+    print(f"Created policy: {new_name}")
+
+
+def lazy_update_policy(modules, state):
+    target_id = prompt_optional_text("Target policy ID")
+    if not target_id:
+        print("X - Policy ID is required. - X")
+        return
+
+    template_path = template_file_path("policy_template_execute_command.xml")
+    root = load_xml_root(template_path)
+    new_name = f"Eve Lazy Policy Updated {random_suffix()}"
+    set_xml_text(root, "general/name", new_name)
+
+    temp_path = make_temp_path("lazy_policy_update", ".xml")
+    write_xml_root(temp_path, root)
+
+    result = modules["policies"].update_policy_by_id(
+        state["server"], state["token"], target_id, temp_path
+    )
+    print(result)
+    print(f"Updated policy ID {target_id} with name: {new_name}")
+
+
+def lazy_list_policies(modules, state):
+    print_result(modules["policies"].get_policies(state["server"], state["token"]))
+
+
+def lazy_create_api_client_and_role(modules, state):
+    role_template = read_json_file(template_file_path("api_role.json"))
+    client_template = read_json_file(template_file_path("api_client.json"))
+
+    role_name = f"Eve_Lazy_Role_{random_suffix()}"
+    client_name = f"Eve_Lazy_Client_{random_suffix()}"
+
+    role_template["displayName"] = role_name
+    client_template["displayName"] = client_name
+    client_template["authorizationScopes"] = [role_name]
+
+    role_temp_path = make_temp_path("lazy_api_role_create", ".json")
+    client_temp_path = make_temp_path("lazy_api_client_create", ".json")
+    write_json_file(role_temp_path, role_template)
+    write_json_file(client_temp_path, client_template)
+
+    role_result = modules["api"].create_api_role(state["server"], state["token"], role_temp_path)
+    print(role_result)
+    client_result = modules["api"].create_api_client(
+        state["server"], state["token"], client_temp_path
+    )
+    print(client_result)
+    print(f"Created API role: {role_name}")
+    print(f"Created API client: {client_name}")
+
+
+def lazy_list_api_clients(modules, state):
+    print_result(modules["api"].get_api_clients(state["server"], state["token"]))
+
+
+def lazy_list_api_roles(modules, state):
+    print_result(modules["api"].get_api_roles(state["server"], state["token"]))
+
+
+def build_lazy_actions(modules, permissions):
+    actions = []
+
+    if "Create Accounts" in permissions:
+        actions.append(("Create New Administrator Account", lazy_create_admin_account))
+    if "Update Accounts" in permissions:
+        actions.append(("Update Existing Account Username And Password", lazy_update_account))
+    if "Read Accounts" in permissions:
+        actions.append(("List Accounts", lazy_list_accounts))
+    if "Create Computer Extension Attributes" in permissions:
+        actions.append(
+            ("Create New Computer Extension Attribute", lazy_create_extension_attribute)
+        )
+    if "Update Computer Extension Attributes" in permissions:
+        actions.append(
+            ("Update Existing Computer Extension Attribute", lazy_update_extension_attribute)
+        )
+    if "Read Computer Extension Attributes" in permissions:
+        actions.append(("List Computer Extension Attributes", lazy_list_extension_attributes))
+    if "Create Policies" in permissions:
+        actions.append(("Create New Policy", lazy_create_policy))
+    if "Update Policies" in permissions:
+        actions.append(("Update Existing Policy", lazy_update_policy))
+    if "Read Policies" in permissions:
+        actions.append(("List Policies", lazy_list_policies))
+    if "Create API Integrations" in permissions and "Create API Roles" in permissions:
+        actions.append(("Create New API Client And Role", lazy_create_api_client_and_role))
+    if "Read API Integrations" in permissions:
+        actions.append(("List API Clients", lazy_list_api_clients))
+    if "Read API Roles" in permissions:
+        actions.append(("List API Roles", lazy_list_api_roles))
+
+    return actions
 
 
 def lazy_mode_menu(modules, state):
-    if not ensure_authenticated(modules, state):
+    token_details = lazy_authenticate(modules, state)
+    if not token_details:
         return
 
-    try:
-        token_details = modules["auth"].get_token_details(state["server"], state["token"])
-    except Exception as exc:
-        print(exc)
-        return
+    permissions = extract_permissions(token_details)
 
     while True:
-        lazy_actions = build_lazy_actions(modules, state, token_details)
-        options = [label for label, _, _ in lazy_actions]
+        lazy_actions = build_lazy_actions(modules, permissions)
+        options = [label for label, _ in lazy_actions]
         options.append("Show Raw Token Details")
         options.append("Back")
 
-        print("Lazy Mode analyzes the current token and offers likely-safe starting actions.")
+        if not lazy_actions:
+            print("No guided actions matched the permissions in the current token.")
         choice = prompt_choice("Select lazy mode option:", options)
 
         if choice <= len(lazy_actions):
-            _, func, args = lazy_actions[choice - 1]
-            run_authenticated_action(modules, state, func, *args)
+            _, func = lazy_actions[choice - 1]
+            try:
+                func(modules, state)
+            except Exception as exc:
+                print(exc)
         elif choice == len(lazy_actions) + 1:
             print(token_details)
         else:
