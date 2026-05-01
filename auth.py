@@ -1,11 +1,42 @@
 #!/bin/env python3
 import subprocess
 import argparse
-import base64, json, os
-from datetime import datetime, UTC, timedelta
-from dateutil import parser
-import requests
-import urllib3
+import base64, json, os, sys
+from datetime import datetime, timedelta, timezone
+
+# Attempt to import non-native dependent modules, catch and guide users if it fails
+import_error = []
+
+try:
+    from dateutil import parser
+except ImportError:
+    #print("Required module dateutil import error, install by running: python3 -m pip install python-dateutil")
+    import_error.append("python-dateutil")
+    
+try:
+    import requests
+except ImportError:
+#    print("Required module requests import error, install by running: python3 -m pip install requests")
+#    import_error = True
+    import_error.append("requests")
+
+try:
+    import urllib3
+except ImportError:
+#    print("Required module urllib3 import error, install by running: python3 -m pip install urllib3")
+#    import_error = True
+    import_error.append("urllib3")
+
+# Exit if errors during imports
+if len(import_error) > 0:
+    missing_modules = ' '.join(import_error)
+    print("Required module(s) [",missing_modules,"] threw errors on import, install by running: python3 -m pip install",missing_modules)
+    sys.exit(1)
+
+try:
+    from datetime import UTC
+except ImportError:
+    UTC = timezone.utc
         
 def get_auth_token(base_url, auth_header):
     url = f"{base_url}/api/v1/auth/token"
@@ -53,6 +84,8 @@ def auth_token(server, args):
         result = get_auth_token(server, args.basic_auth)
         result_json = json.loads(result)
         result_json["server"] = server
+        time_val = parser.parse(result_json.get('expires'))
+        result_json["expires"] = time_val.strftime("%Y-%m-%dT%H:%M:%SZ")
         result = json.dumps(result_json)
         return result 
     elif hasattr(args, 'api_client_id') and hasattr(args, 'api_client_secret'):
