@@ -4,21 +4,51 @@
 </p>
 
 ## Overview
-Eve is a Jamf exploitation toolkit used to interact with either cloud hosted Jamf Pro tenants or locally hosted Jamf Pro servers using API calls. To use this toolkit credentials for an account registered with the Jamf instance that has API access will be required. This tooling automates attacks that my team and I have performed successfully to exploit Jamf access to enumerate Apple devices, escalate privileges, as well as execute code in varying contexts to laterally move to different systems. The intended user for this toolkit should already have some awareness about Jamf API permissions to know how to best leverage their access. For those trying to discover what can be done I recommend starting <a href="https://developer.jamf.com/jamf-pro/docs/classic-api-minimum-required-privileges-and-endpoint-mapping">here</a>.
+Eve is a Jamf exploitation toolkit used to interact with either cloud hosted Jamf Pro tenants or locally hosted Jamf Pro servers using API calls. 
+Release binaries have been added to this project to simplify setup and use, these are essentially <a href="https://pyinstaller.org/en/stable/">pyinstaller</a> compiled binaries based on the Python code in the repo. 
+To use this toolkit credentials for an account/API client id+secret/or bearer token of the Jamf instance that has API access will be required. 
+This tooling automates attacks that my team and I have performed successfully to exploit Jamf access to enumerate Apple devices, escalate privileges, as well as execute code in varying contexts to laterally move to different systems. The intended user for this toolkit should already have some awareness about Jamf API permissions to know how to best leverage their access. 
+For those trying to discover what can be done I recommend starting <a href="https://developer.jamf.com/jamf-pro/docs/classic-api-minimum-required-privileges-and-endpoint-mapping">here</a>.
 
-## Requirements
-1. Python 3.12 or newer
+> [!NOTE]
+There are templates for common XML and JSON input files available in the Eve templates directory.
+
+## Requirements for release binaries
+A supported modern version of one of the following Operating Systems: x64 Windows, x64 Linux, ARM macOS
+
+## Requirements to run the python3 scripts
+1. Python 3.12 or newer preferred (recently updated for older Python 3.9.6+, but some warnings occur)
 2. requests Python Module
 3. urllib Python Module
 4. dateutil Python Module
-5. flask Python Module
-6. flask_cors Python Module
-7. pytz Python Module
-8. certifi Python Module
-9. pprint Python Module
+5. flask Python Module (optional requirement for WebUI)
+6. flask_cors Python Module (optional requirement for WebUI)
+7. pytz Python Module (optional requirement for WebUI)
+8. certifi Python Module (optional requirement for WebUI)
+9. pprint Python Module (optional requirement for WebUI)
 
 ## Setup
-### Web UI Setup
+### Binaries
+Download the appropriate release binary for your operating system
+| File | OS |
+| -------- | -------- |
+| eve.macho | macOS |
+| eve.elf | Linux |
+| eve.exe | Windows |
+
+#### On Windows
+Run the Windows executable
+
+#### On Linux
+Make eve.elf executable and run it `chmod +x ./eve.elf && ./eve.elf`
+
+#### On macOS
+1. Make eve.macho executable `chmod +x ./eve.macho`
+2. Clear quarantine attributes `xattr -c ./eve.macho`
+3. Double click or run it in Terminal `./eve.macho`
+
+
+### Scripted Web UI
 ```bash
 # Clone the repository
 git clone https://github.com/RobotOperator/Eve.git
@@ -30,7 +60,7 @@ python3 eve_ui.py
 
 The web UI will be available at `http://localhost:8003`
 
-### Proxied Web UI Setup (for red teaming/pivoting)
+### Proxied Web UI (for red teaming/pivoting)
 To proxy outbound JAMF API requests while keeping the web UI local:
 ```bash
 # Configure proxychains (edit /etc/proxychains.conf or use custom config)
@@ -58,8 +88,8 @@ python3 auth.py --basic_auth ua... --jamf_server https://tenant.jamfcloud.com
 python3 auth.py --bearer_token ey... --jamf_server https://tenant.jamfcloud.com
 ```
 
-### Development Setup
-If you want to modify the frontend, you'll need Node.js and npm:
+### Development of Web UI Setup
+If you want to modify the web frontend, you'll need Node.js and npm:
 ```bash
 cd ui/frontend
 npm install
@@ -68,7 +98,25 @@ npm run build
 ```
 
 ## Usage
-Eve includes some pre-defined XML and JSON templates for interaction with Jamf Pro APIs in the "templates" directory. These can be modified and provided to command-line input_file arguments or loaded automatically in the Eve UI. 
+Eve includes some pre-defined XML and JSON templates for interaction with Jamf Pro APIs in the "templates" directory. These can be modified and provided to command-line input_file arguments or loaded automatically in the Eve Web UI. 
+
+### main.py
+The main python script is a wrapper for most of Eve's functionality designed to guide users. When run the user will be presented with a numbered submenu in their terminal to select different options. The expected workflow is as follows:
+1. `python3 ./main.py`
+2. Select the first option `Auth` to authuthenticate to a Jamf Pro server (skip API port if cloud hosted, otherwise the common on-site API port is 8443)
+3. Enter user credentials, API client credentials, or a Bearer token
+4. Once you see a bearer token obtained/recognized back out to the main menu
+5. Use the additional options to enumerate/update the Jamf Pro settings
+
+> [!NOTE]
+Use of the Web UI from the main.py script and release binaries is experimental, if you run into issues try the guidance below for eve_ui.py.
+
+#### Lazy Mode
+Main.py includes an option to run in a lazy mode, this will accept authentication credentials and enumerate the privileges granted by either the obtained or passed bearer token and create a sub-menu based on possible actions. Options in the sub-menu may perform **automated actions**, such as 'Create Administrator Account' will attempt to create a new administrator on the Jamf Pro server and print out the new account name as well as password.
+
+> [!WARNING]
+**Read main.py**<br>
+I highly encourage anyone wanting to use lazy mode to read through main.py and see how it performs automated actions to fully understand what may be attempted prior to using it.
 
 ### Web UI
 1. Start the Flask server: `python3 eve_ui.py`
@@ -91,7 +139,7 @@ Eve includes some pre-defined XML and JSON templates for interaction with Jamf P
 - **Token Management**: Automatic token refresh for uninterrupted sessions
 - **Multi-Auth Support**: Both OAuth2 and username/password authentication
 
-###  CLI Tools
+###  Additional CLI Scripts
 Any of the CLI commands will show elligible parameters and usage with the scripts by running --help.
 ```
 python3 <script_name.py> --help
@@ -110,7 +158,7 @@ python3 auth.py --bearer_token ey... --jamf_server https://tenant.jamfcloud.com 
 ### Computers.py
 ```
 # Used for searching for computer details, pulling computer policy logs, and creating/updating/deleting/reading computer extension attributes
-# Requires bearer token with Read Computers JSSObject permission and/or Create/Read/Update/Delete Computer Extension Attributes JSSObject permissions
+# Requires bearer token with Read Computers JWSSObject permission and/or Create/Read/Update/Delete Computer Extension Attributes JSSObject permissions
 # Authentication details are optional/shown in first example below
 python3 computers.py --get_computers [--username --password --jamf_server]
 python3 computers.py --search_for_computer_by_string "JVM"
@@ -179,6 +227,23 @@ python3 policies.py --create_policy --input_file ./path_to_my_policy.xml
 python3 policies.py --update_policy_by_id 27 --input_file ./path_to_my_policy.xml
 python3 policies.py --delete_policy_by_id 27
 ```
+### SSO.py
+```
+# Used for interacting with Jamf Pro SSO configuration settings. Reconfiguring SSO to point towards an attacker IDP can allow impersonating Jamf Pro accounts and groups.
+# Requires bearer token with Update SSO Settings permission
+# Authentication parameters are available as shown previously
+python3 sso.py --get_all_sso_configs - Retrieves SSO configuration and failover details when available.
+python3 sso.py --get_sso_config - Retrieves the current SSO configuration from the Jamf Pro API.
+python3 sso.py --get_sso_history - Retrieves the SSO history object from the Jamf Pro API.
+python3 sso.py --get_sso_failover - Retrieves the current SSO failover settings.
+python3 sso.py --regenerate_sso_failover - Regenerates and retrieves the current SSO failover settings.
+python3 sso.py --update_sso_config --input_file ./path_to_sso.json - Updates the SSO configuration using a supplied input JSON file.
+python3 sso.py --disable_sso_config - Disables the current SSO configuration.
+python3 sso.py --generate_sso_cert - Generates the SSO certificate used by Jamf Pro to sign identity provider requests.
+python3 sso.py --delete_sso_cert - Deletes the SSO certificate used by Jamf Pro to sign identity provider requests.
+python3 sso.py --get_sso_cert - Gets the SSO certificate used by Jamf Pro to sign identity provider requests.
+```
+
 
 ## Contributors
 <a href="https://github.com/MayerDaniel">Daniel Mayer</a>
